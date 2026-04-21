@@ -294,7 +294,7 @@ export function DashboardC() {
             {ACTIVITY.map((a, i) => (
               <div key={i} className="flex items-start gap-2.5">
                 <div
-                  className="w-2 h-2 rounded-full mt-[5px] flex-shrink-0"
+                  className="w-2 h-2 rounded-full mt-[5px] shrink-0"
                   style={{
                     background: a.dot,
                     boxShadow: `0 0 6px ${a.shadow}`,
@@ -349,7 +349,7 @@ function CompactStat({ label, value, deltaLabel, deltaColor, borderColor, bars, 
           </span>
         </div>
       </div>
-      <div className="flex items-end gap-[2px] h-7 flex-shrink-0">
+      <div className="flex items-end gap-[2px] h-7 shrink-0">
         {bars.map((h, i) => (
           <div
             key={i}

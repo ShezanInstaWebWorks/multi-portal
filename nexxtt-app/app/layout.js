@@ -25,7 +25,7 @@ export default function RootLayout({ children }) {
       lang="en"
       className={`${displayFont.variable} ${bodyFont.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-off text-body">
+      <body className="min-h-full flex flex-col bg-off text-body" suppressHydrationWarning>
         <Providers>{children}</Providers>
       </body>
     </html>

@@ -62,7 +62,7 @@ export function Step3Client({ clients, draft, setDraft }) {
               >
                 <div className="flex items-center gap-3">
                   <div
-                    className="w-11 h-11 rounded-full flex items-center justify-center text-[0.85rem] font-extrabold flex-shrink-0"
+                    className="w-11 h-11 rounded-full flex items-center justify-center text-[0.85rem] font-extrabold shrink-0"
                     style={{
                       background: "var(--color-teal-pale)",
                       color: "var(--color-teal)",
@@ -82,7 +82,7 @@ export function Step3Client({ clients, draft, setDraft }) {
                     </div>
                   </div>
                   <div
-                    className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
+                    className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
                     style={{
                       background: selected ? "var(--color-teal)" : "transparent",
                       border: selected

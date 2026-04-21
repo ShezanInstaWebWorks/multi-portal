@@ -17,36 +17,23 @@ export default async function OrderDetailPage({ params }) {
   const ctx = await resolveAgencyContext();
   if (!ctx.user) redirect("/login");
 
+  // Single round-trip: job + client + projects + per-project service via nested selects.
   const { data: job } = await ctx.supabase
     .from("jobs")
     .select(
-      "id, job_number, status, is_rush, total_cost_cents, total_retail_cents, created_at, client_id, agency_id"
+      `id, job_number, status, is_rush, total_cost_cents, total_retail_cents, created_at, client_id, agency_id,
+       clients ( business_name, contact_name, contact_email ),
+       projects ( id, status, cost_price_cents, retail_price_cents, is_rush, due_date, service_id,
+                  services ( id, name, icon, slug ) )`
     )
     .eq("id", id)
     .single();
 
   if (!job || (ctx.agencyId && job.agency_id !== ctx.agencyId)) notFound();
 
-  const [clientRes, projectsRes] = await Promise.all([
-    ctx.supabase
-      .from("clients")
-      .select("business_name, contact_name, contact_email")
-      .eq("id", job.client_id)
-      .single(),
-    ctx.supabase
-      .from("projects")
-      .select("id, status, cost_price_cents, retail_price_cents, is_rush, due_date, service_id")
-      .eq("job_id", job.id),
-  ]);
-
-  const services = projectsRes.data?.length
-    ? (
-        await ctx.supabase
-          .from("services")
-          .select("id, name, icon, slug")
-          .in("id", projectsRes.data.map((p) => p.service_id))
-      ).data ?? []
-    : [];
+  const clientRes = { data: job.clients ?? null };
+  const projectsRes = { data: job.projects ?? [] };
+  const services = (job.projects ?? []).map((p) => p.services).filter(Boolean);
 
   const profit = job.total_retail_cents - job.total_cost_cents;
 

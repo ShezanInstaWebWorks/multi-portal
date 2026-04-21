@@ -26,7 +26,7 @@ export function ImpersonationBanner({ agencyName }) {
       }}
     >
       <span
-        className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+        className="w-1.5 h-1.5 rounded-full shrink-0"
         style={{ background: "#7c3aed", boxShadow: "0 0 6px rgba(124,58,237,0.6)" }}
       />
       <span className="flex-1 truncate">
@@ -37,7 +37,7 @@ export function ImpersonationBanner({ agencyName }) {
       <button
         onClick={stopImpersonating}
         disabled={pending}
-        className="flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[0.72rem] font-extrabold disabled:opacity-60"
+        className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[0.72rem] font-extrabold disabled:opacity-60"
         style={{
           background: "rgba(124,58,237,0.18)",
           color: "#7c3aed",

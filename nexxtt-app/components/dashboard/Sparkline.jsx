@@ -4,7 +4,7 @@ export function Sparkline({ heights, color = "var(--color-teal)" }) {
       {heights.map((h, i) => (
         <div
           key={i}
-          className="w-1.5 rounded-t-[3px] flex-shrink-0 transition-opacity"
+          className="w-1.5 rounded-t-[3px] shrink-0 transition-opacity"
           style={{
             height: `${h}%`,
             background: color,

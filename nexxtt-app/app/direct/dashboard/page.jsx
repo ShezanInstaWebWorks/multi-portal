@@ -171,7 +171,7 @@ export default async function DirectDashboardPage() {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2.5">
                           <div
-                            className="w-8 h-8 rounded-[10px] flex items-center justify-center text-[0.95rem] flex-shrink-0"
+                            className="w-8 h-8 rounded-[10px] flex items-center justify-center text-[0.95rem] shrink-0"
                             style={{
                               background: "var(--color-teal-pale)",
                               color: "var(--color-teal)",
@@ -213,7 +213,7 @@ export default async function DirectDashboardPage() {
                     }`}
                   >
                     <div
-                      className="w-8 h-8 rounded-[10px] flex items-center justify-center text-[0.95rem] flex-shrink-0"
+                      className="w-8 h-8 rounded-[10px] flex items-center justify-center text-[0.95rem] shrink-0"
                       style={{
                         background: "var(--color-teal-pale)",
                         color: "var(--color-teal)",

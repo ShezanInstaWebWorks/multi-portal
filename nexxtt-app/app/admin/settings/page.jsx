@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient, createAdminSupabaseClient } from "@/lib/supabase/server";
 import { AdminTopbar } from "@/components/layout/AdminTopbar";
+import { CronJobCard } from "@/components/admin/CronJobCard";
 
 export const metadata = { title: "Platform Settings · Admin · nexxtt.io", robots: "noindex, nofollow" };
 
@@ -10,12 +11,26 @@ export default async function AdminSettingsPage() {
   if (!user) redirect("/login");
 
   const admin = createAdminSupabaseClient();
-  const { data: config } = await admin.from("platform_config").select("*").limit(1).maybeSingle();
-  const { data: actions } = await admin
-    .from("admin_actions")
-    .select("id, action, target_type, target_id, created_at, metadata")
-    .order("created_at", { ascending: false })
-    .limit(10);
+
+  const [configRes, actionsRes] = await Promise.all([
+    admin.from("platform_config").select("*").limit(1).maybeSingle(),
+    admin
+      .from("admin_actions")
+      .select("id, action, target_type, target_id, created_at, metadata")
+      .order("created_at", { ascending: false })
+      .limit(10),
+  ]);
+  const config = configRes.data;
+  const actions = actionsRes.data;
+
+  // admin_actions rows are logged by both cron-fired and manual runs, so use
+  // them as the authoritative "last run" source.
+  const lastExpireRun = (actions ?? []).find(
+    (a) => a.action === "cron_expire_invites" || a.action === "manual_run_expire_invites"
+  );
+  const lastCommissionRun = (actions ?? []).find(
+    (a) => a.action === "cron_generate_commissions" || a.action === "manual_run_generate_commissions"
+  );
 
   return (
     <>
@@ -25,9 +40,9 @@ export default async function AdminSettingsPage() {
           Platform settings
         </h1>
         <p className="text-sm text-muted mb-5">
-          Commission rules, feature flags, and the recent admin action log. Editing
-          is disabled for this pass — changes land when the settings-edit flow is
-          built.
+          Commission rules, feature flags, scheduled jobs, and the recent admin
+          action log. Config editing is deferred to a later pass — scheduled
+          jobs are read-write via the &ldquo;Run now&rdquo; buttons.
         </p>
 
         {/* Commission rules */}
@@ -53,10 +68,25 @@ export default async function AdminSettingsPage() {
           <Flag label="Referral program" on={config?.referral_program_enabled} />
           <Flag label="White label"      on={config?.white_label_enabled} />
           <Flag label="Rush orders"      on={config?.rush_orders_enabled} />
-          <Flag
-            label="Maintenance mode"
-            on={config?.maintenance_mode}
-            danger
+          <Flag label="Maintenance mode" on={config?.maintenance_mode} danger />
+        </Section>
+
+        {/* Scheduled jobs */}
+        <Section title="Scheduled jobs">
+          <CronJobCard
+            label="Expire pending invites"
+            description="Flips clients from 'invited' to 'no_access' once the 7-day window closes."
+            schedule="daily · 03:00 UTC"
+            jobKey="expire-invites"
+            lastRun={formatRun(lastExpireRun)}
+          />
+          <div className="h-px bg-border my-1" />
+          <CronJobCard
+            label="Generate monthly commissions"
+            description="Creates commission entries for every active referral's orders this period."
+            schedule="monthly · 1st at 03:15 UTC"
+            jobKey="generate-commissions"
+            lastRun={formatRun(lastCommissionRun)}
           />
         </Section>
 
@@ -74,7 +104,7 @@ export default async function AdminSettingsPage() {
                   }`}
                 >
                   <div
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-[0.85rem] flex-shrink-0"
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-[0.85rem] shrink-0"
                     style={{ background: "rgba(124,58,237,0.1)" }}
                   >
                     🛡️
@@ -84,7 +114,7 @@ export default async function AdminSettingsPage() {
                       {a.action}
                     </div>
                     <div className="text-[0.72rem] text-muted">
-                      {a.target_type ? `${a.target_type} · ${a.target_id}` : "—"}
+                      {a.target_type ? `${a.target_type}${a.target_id ? " · " + a.target_id : ""}` : "—"}
                     </div>
                   </div>
                   <div className="text-[0.72rem] text-muted whitespace-nowrap">
@@ -100,6 +130,14 @@ export default async function AdminSettingsPage() {
       </main>
     </>
   );
+}
+
+function formatRun(a) {
+  if (!a) return "never";
+  const d = new Date(a.created_at);
+  return d.toLocaleString("en-AU", {
+    day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
+  });
 }
 
 function Section({ title, children }) {

@@ -53,7 +53,7 @@ export function Step1Services({ services, draft, setDraft, rushSurcharge }) {
             >
               <div className="flex items-start gap-3">
                 <div
-                  className="w-11 h-11 rounded-xl flex items-center justify-center text-[1.3rem] flex-shrink-0"
+                  className="w-11 h-11 rounded-xl flex items-center justify-center text-[1.3rem] shrink-0"
                   style={{
                     background: "var(--color-teal-pale)",
                     color: "var(--color-teal)",
@@ -71,7 +71,7 @@ export function Step1Services({ services, draft, setDraft, rushSurcharge }) {
                   </div>
                 </div>
                 <div
-                  className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
+                  className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-all ${
                     selected ? "text-white" : ""
                   }`}
                   style={{

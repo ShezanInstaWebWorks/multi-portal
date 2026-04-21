@@ -1,5 +1,7 @@
 import { createServerSupabaseClient, createAdminSupabaseClient } from "@/lib/supabase/server";
 import { isValidSlug, slugify } from "@/lib/slug";
+import { sendEmail } from "@/lib/email/send";
+import { ClientInviteEmail } from "@/emails/ClientInviteEmail";
 
 export async function POST(req) {
   const supabase = await createServerSupabaseClient();
@@ -35,7 +37,10 @@ export async function POST(req) {
     internalNote,
     portalAccessLevel,
     portalSlug,
+    inviteSubject,
     inviteMessage,
+    inviteCta,
+    signOffName,
   } = body ?? {};
 
   // Validation
@@ -155,14 +160,49 @@ export async function POST(req) {
     link: "/agency/clients",
   });
 
-  // TODO session 25+: send branded email via Resend.  For now we return the
-  // action link so the agency can copy-paste it.
+  // Load branding for the white-label email (falls back to agency name + defaults)
+  const [brandRes, agencyRes] = await Promise.all([
+    admin.from("agency_brands").select("display_name, primary_colour, accent_colour, support_email, sign_off_name, portal_slug").eq("agency_id", agencyId).maybeSingle(),
+    admin.from("agencies").select("name, slug").eq("id", agencyId).single(),
+  ]);
+  const brand = brandRes.data ?? {
+    display_name: agencyRes.data?.name,
+    primary_colour: "#0B1F3A",
+    accent_colour: "#00B8A9",
+    portal_slug: agencyRes.data?.slug,
+  };
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const portalUrl = `${appUrl.replace(/^https?:\/\//, "")}/portal/${brand.portal_slug ?? "agency"}/${slug}`;
+  const displayName = brand.display_name ?? agencyRes.data?.name ?? "Your agency";
+
+  // Send branded email — no-ops silently if RESEND_API_KEY isn't set.
+  const emailResult = await sendEmail({
+    to: contactEmail.toLowerCase(),
+    subject: inviteSubject || `Your project portal is ready — ${displayName}`,
+    from: `${displayName} <noreply@nexxtt.io>`,
+    replyTo: brand.support_email ?? undefined,
+    react: (
+      <ClientInviteEmail
+        brand={brand}
+        contactName={contactName.trim()}
+        subject={inviteSubject || `Your project portal is ready — ${displayName}`}
+        message={inviteMessage || `Hi ${contactName.split(/\s+/)[0] ?? "there"},\n\nYour portal is ready.`}
+        cta={inviteCta || "Set Up My Portal →"}
+        signOff={signOffName || brand.sign_off_name || displayName}
+        actionLink={actionLink}
+        portalUrl={portalUrl}
+      />
+    ),
+  });
+
   return Response.json(
     {
       client,
       actionLink,
       invitedUserId,
-      emailSent: false,
+      emailSent: emailResult.sent === true,
+      emailReason: emailResult.reason,
       previewMessage: inviteMessage,
     },
     { status: 201 }

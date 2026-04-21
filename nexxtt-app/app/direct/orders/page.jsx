@@ -90,7 +90,7 @@ export default async function DirectOrdersPage() {
                       ))}
                     </div>
                   </div>
-                  <div className="text-right flex-shrink-0">
+                  <div className="text-right shrink-0">
                     <div className="text-[0.68rem] font-bold uppercase text-muted" style={{ letterSpacing: "0.08em" }}>
                       TOTAL
                     </div>

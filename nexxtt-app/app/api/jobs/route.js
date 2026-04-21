@@ -1,4 +1,6 @@
 import { createServerSupabaseClient, createAdminSupabaseClient } from "@/lib/supabase/server";
+import { sendEmail } from "@/lib/email/send";
+import { OrderPlacedEmail } from "@/emails/OrderPlacedEmail";
 
 export async function POST(req) {
   const supabase = await createServerSupabaseClient();
@@ -223,6 +225,33 @@ export async function POST(req) {
     });
   }
   await admin.from("notifications").insert(notifications);
+
+  // 7. Send confirmation email to the agency owner (no-ops without RESEND_API_KEY).
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const servicesForEmail = pricedItems.map((p) => {
+    const svc = services.find((s) => s.id === p.serviceId);
+    return {
+      name: svc?.name ?? "Project",
+      icon: svc?.icon ?? "•",
+      retail_cents: p.retail_cents,
+    };
+  });
+
+  await sendEmail({
+    to: user.email,
+    subject: `Order ${job.job_number} placed — ${money(totalRetail)} total`,
+    react: (
+      <OrderPlacedEmail
+        recipientName={user.user_metadata?.first_name ?? user.email}
+        jobNumber={job.job_number}
+        services={servicesForEmail}
+        totalRetailCents={totalRetail}
+        totalProfitCents={totalRetail - totalCost}
+        link={`${appUrl}/agency/orders/${job.id}`}
+        viewer="agency"
+      />
+    ),
+  });
 
   return Response.json({ job, newBalance }, { status: 201 });
 }

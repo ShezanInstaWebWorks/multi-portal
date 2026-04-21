@@ -13,7 +13,7 @@ export function RefTopbar({ userName = "Referral Partner" }) {
 
   return (
     <header
-      className="h-15 flex items-center justify-between px-5 lg:px-8 flex-shrink-0 sticky top-0 z-30"
+      className="h-15 flex items-center justify-between px-5 lg:px-8 shrink-0 sticky top-0 z-30"
       style={{
         height: 60,
         background: "var(--color-navy)",

@@ -145,7 +145,7 @@ export function OrderWizard({ services, clients, agency, rushSurcharge }) {
               }}
             >
               <div
-                className="w-[26px] h-[26px] rounded-full flex items-center justify-center text-[0.72rem] font-extrabold flex-shrink-0 transition-all"
+                className="w-[26px] h-[26px] rounded-full flex items-center justify-center text-[0.72rem] font-extrabold shrink-0 transition-all"
                 style={
                   state === "active"
                     ? {

@@ -1,5 +1,6 @@
 import { AdminSidebar } from "@/components/layout/AdminSidebar";
 import { MobileDrawer } from "@/components/layout/MobileDrawer";
+import { CommandPalette } from "@/components/search/CommandPalette";
 
 export default function AdminLayout({ children }) {
   return (
@@ -14,6 +15,7 @@ export default function AdminLayout({ children }) {
         <AdminSidebar />
       </MobileDrawer>
       <div className="flex-1 flex flex-col lg:ml-sidebar">{children}</div>
+      <CommandPalette />
     </div>
   );
 }

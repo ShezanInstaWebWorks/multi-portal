@@ -145,7 +145,7 @@ export default async function AdminAgenciesPage() {
                       </div>
                     </div>
                     <span
-                      className="inline-flex items-center px-2 py-[2px] rounded-full text-[0.65rem] font-bold flex-shrink-0"
+                      className="inline-flex items-center px-2 py-[2px] rounded-full text-[0.65rem] font-bold shrink-0"
                       style={{ background: st.bg, color: st.color, border: `1px solid ${st.border}` }}
                     >
                       {a.status}

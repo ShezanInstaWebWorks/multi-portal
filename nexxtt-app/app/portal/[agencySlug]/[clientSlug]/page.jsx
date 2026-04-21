@@ -1,30 +1,15 @@
-import { createServerSupabaseClient, createAdminSupabaseClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { ClientProjectList } from "@/components/client-portal/ClientProjectList";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { resolvePortalContext } from "@/lib/portal-context";
 
 export default async function ClientPortalHomePage({ params }) {
   const { agencySlug, clientSlug } = await params;
 
-  const supabase = await createServerSupabaseClient();
-  const admin = createAdminSupabaseClient();
-
-  // Resolve the client row (layout already did auth/404 checks; duplicate here
-  // to avoid prop-drilling).
-  const { data: brand } = await admin
-    .from("agency_brands")
-    .select("agency_id, display_name")
-    .eq("portal_slug", agencySlug)
-    .maybeSingle();
-  if (!brand) notFound();
-
-  const { data: client } = await admin
-    .from("clients")
-    .select("id, business_name, contact_name, portal_user_id")
-    .eq("agency_id", brand.agency_id)
-    .eq("portal_slug", clientSlug)
-    .maybeSingle();
-  if (!client) notFound();
+  // Layout has already verified user, brand and client; this hits the
+  // request-scoped cache so it's effectively free.
+  const { supabase, admin, brand, client } = await resolvePortalContext(agencySlug, clientSlug);
+  if (!brand || !client) notFound();
 
   // Fetch jobs + nested projects via the session (RLS enforced).
   // NOTE: we intentionally exclude cost fields — the client never sees cost or profit.

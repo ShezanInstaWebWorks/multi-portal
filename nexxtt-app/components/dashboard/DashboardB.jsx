@@ -244,7 +244,7 @@ export function DashboardB() {
                 }`}
               >
                 <div
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-[0.7rem] font-extrabold flex-shrink-0"
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-[0.7rem] font-extrabold shrink-0"
                   style={{
                     background: o.tintBg,
                     border: `1px solid ${o.tintBorder}`,
@@ -268,7 +268,7 @@ export function DashboardB() {
                     />
                   </div>
                 </div>
-                <div className="hidden sm:flex items-center gap-3 flex-shrink-0">
+                <div className="hidden sm:flex items-center gap-3 shrink-0">
                   <StatusMiniPill status={o.status} />
                   <span className="text-[0.8rem] text-muted">due {o.due}</span>
                   <span className="font-display font-extrabold text-[0.95rem] text-green">
@@ -306,7 +306,7 @@ export function DashboardB() {
                   />
                 )}
                 <div
-                  className="w-[18px] h-[18px] rounded-full flex-shrink-0 mt-0.5"
+                  className="w-[18px] h-[18px] rounded-full shrink-0 mt-0.5"
                   style={{
                     background: t.dot,
                     border: "2px solid white",

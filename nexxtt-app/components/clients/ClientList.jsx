@@ -248,7 +248,7 @@ function ClientRow({ client, isLast }) {
       <td className="px-4 py-3">
         <div className="flex items-center gap-2.5">
           <div
-            className="w-9 h-9 rounded-[10px] flex items-center justify-center text-[0.75rem] font-extrabold flex-shrink-0"
+            className="w-9 h-9 rounded-[10px] flex items-center justify-center text-[0.75rem] font-extrabold shrink-0"
             style={{ background: a.bg, border: `1px solid ${a.border}`, color: a.color }}
           >
             {initialsOf(client.business_name)}
@@ -344,7 +344,7 @@ function MobileClientCard({ client }) {
     <div className="bg-white border border-border rounded-[12px] p-4 shadow-sm">
       <div className="flex items-start gap-3">
         <div
-          className="w-9 h-9 rounded-[10px] flex items-center justify-center text-[0.75rem] font-extrabold flex-shrink-0"
+          className="w-9 h-9 rounded-[10px] flex items-center justify-center text-[0.75rem] font-extrabold shrink-0"
           style={{ background: a.bg, border: `1px solid ${a.border}`, color: a.color }}
         >
           {initialsOf(client.business_name)}

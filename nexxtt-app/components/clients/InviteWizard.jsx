@@ -128,7 +128,7 @@ export function InviteWizard({ agency, brand, profileName }) {
           return (
             <div key={s.n} className="flex items-center gap-2.5 flex-1 min-w-[140px]">
               <div
-                className="w-8 h-8 rounded-full flex items-center justify-center text-[0.75rem] font-extrabold flex-shrink-0 transition-all"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-[0.75rem] font-extrabold shrink-0 transition-all"
                 style={
                   state === "active"
                     ? { background: "var(--color-navy)", color: "white", boxShadow: "0 4px 14px rgba(11,31,58,0.25)", transform: "scale(1.08)" }
@@ -555,7 +555,7 @@ function InviteSuccess({ result, router, onCopy, copied, portalUrl }) {
             </code>
             <button
               onClick={onCopy}
-              className="flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[0.75rem] font-semibold text-white"
+              className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[0.75rem] font-semibold text-white"
               style={{ background: "var(--color-teal)" }}
             >
               <Copy className="w-3.5 h-3.5" />
@@ -617,7 +617,7 @@ function AccessOption({ selected, onClick, title, desc }) {
       }}
     >
       <div
-        className="w-4 h-4 rounded-full flex-shrink-0 mt-0.5"
+        className="w-4 h-4 rounded-full shrink-0 mt-0.5"
         style={{
           background: selected ? "var(--color-teal)" : "transparent",
           border: selected
@@ -638,7 +638,7 @@ function Benefit({ icon, title, desc }) {
   return (
     <div className="flex items-start gap-2.5">
       <div
-        className="w-7 h-7 rounded-lg flex items-center justify-center text-[0.85rem] flex-shrink-0"
+        className="w-7 h-7 rounded-lg flex items-center justify-center text-[0.85rem] shrink-0"
         style={{
           background: "rgba(0,184,169,0.15)",
           border: "1px solid rgba(0,184,169,0.25)",
@@ -657,7 +657,7 @@ function Benefit({ icon, title, desc }) {
 function Info({ k, children, valueClass = "" }) {
   return (
     <div className="flex items-start justify-between gap-4 py-2.5 border-b border-border last:border-0">
-      <div className="text-[0.78rem] text-muted font-semibold flex-shrink-0">
+      <div className="text-[0.78rem] text-muted font-semibold shrink-0">
         {k}
       </div>
       <div className={`text-[0.85rem] text-right ${valueClass}`}>{children}</div>
@@ -669,7 +669,7 @@ function TimelineStep({ n, text, dim }) {
   return (
     <div className="flex gap-3 items-start">
       <div
-        className="w-6 h-6 rounded-full flex items-center justify-center text-[0.65rem] font-extrabold flex-shrink-0"
+        className="w-6 h-6 rounded-full flex items-center justify-center text-[0.65rem] font-extrabold shrink-0"
         style={{
           background: dim ? "rgba(255,255,255,0.1)" : "var(--color-teal)",
           color: dim ? "rgba(255,255,255,0.4)" : "var(--color-navy)",

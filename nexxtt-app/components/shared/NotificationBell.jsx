@@ -122,7 +122,7 @@ export function NotificationBell({ userId: userIdProp, variant = "light" }) {
                     } ${!n.is_read ? "bg-teal-pale/40" : ""}`}
                   >
                     <div
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-[0.95rem] flex-shrink-0"
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-[0.95rem] shrink-0"
                       style={{ background: style.tint, border: `1px solid ${style.border}` }}
                     >
                       {style.icon}
@@ -142,7 +142,7 @@ export function NotificationBell({ userId: userIdProp, variant = "light" }) {
                     </div>
                     {!n.is_read && (
                       <div
-                        className="w-2 h-2 rounded-full mt-2 flex-shrink-0"
+                        className="w-2 h-2 rounded-full mt-2 shrink-0"
                         style={{ background: "var(--color-teal)" }}
                       />
                     )}

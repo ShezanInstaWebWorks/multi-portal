@@ -1,9 +1,12 @@
 "use client";
 
+import { tierFor, tierProgress } from "@/lib/priority";
+
 // Wireframe s04d — command-center: 4 stat boxes, gantt timeline, activity +
 // dark earnings chart. Agency shell sidebar stays visible; the wireframe's
 // "wide command sidebar" profile card is rendered inline at the top as a
-// welcome strip.
+// welcome strip with a real Priority Unlock progress bar driven by
+// agency.total_jobs_count.
 
 const STATS = [
   { label: "ACTIVE",      value: "3",     pill: "+1",         pillCls: "bg-teal/10 text-teal border border-teal/20",         border: "var(--color-teal)"  },
@@ -75,7 +78,12 @@ const ACTIVITY = [
   { tag: "FINANCE",   tagCls: "bg-amber/10 text-amber border-amber/30", title: "Prepaid balance top-up",                  sub: "$4,000 · 10% off · valid 6 months", time: "1w ago" },
 ];
 
-export function DashboardD() {
+export function DashboardD({ agency, firstName }) {
+  const jobsCount = agency?.total_jobs_count ?? 0;
+  const { current, next } = tierFor(jobsCount);
+  const { pct, toGo } = tierProgress(jobsCount);
+  const initials = firstName ? firstName[0]?.toUpperCase() + (agency?.name?.[0]?.toUpperCase() ?? "") : "·";
+
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-5 lg:py-6 pb-20 lg:pb-8">
       {/* Welcome strip with Priority Unlock */}
@@ -87,30 +95,38 @@ export function DashboardD() {
       >
         <div className="flex items-center gap-3 flex-wrap">
           <div
-            className="w-9 h-9 rounded-full flex items-center justify-center text-[0.78rem] font-extrabold text-white flex-shrink-0"
+            className="w-9 h-9 rounded-full flex items-center justify-center text-[0.78rem] font-extrabold text-white shrink-0"
             style={{
               background: "var(--color-amber)",
               boxShadow: "0 2px 8px rgba(245,158,11,0.35)",
             }}
           >
-            AJ
+            {initials}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-[0.88rem] font-bold text-dark">Alex Johnson</div>
+            <div className="text-[0.88rem] font-bold text-dark">
+              {firstName ?? "Agency"} {agency?.name ? `· ${agency.name}` : ""}
+            </div>
             <div
               className="text-[0.68rem] text-muted uppercase"
               style={{ letterSpacing: "0.04em" }}
             >
-              AGENCY PARTNER · PRO
+              AGENCY PARTNER · {current.label.toUpperCase()}
             </div>
           </div>
-          <div className="flex-1 min-w-[180px] max-w-[260px]">
+          <div className="flex-1 min-w-[180px] max-w-[280px]">
             <div
               className="text-[0.65rem] font-bold uppercase text-muted flex justify-between mb-1.5"
               style={{ letterSpacing: "0.1em" }}
             >
               <span>PRIORITY UNLOCK</span>
-              <span style={{ color: "#f43f5e" }}>7/10</span>
+              {next ? (
+                <span style={{ color: next.color }}>
+                  {jobsCount}/{next.min}
+                </span>
+              ) : (
+                <span style={{ color: current.color }}>max tier</span>
+              )}
             </div>
             <div
               className="h-1.5 rounded-full overflow-hidden"
@@ -119,14 +135,20 @@ export function DashboardD() {
               <div
                 className="h-full rounded-full"
                 style={{
-                  width: "70%",
-                  background: "linear-gradient(90deg,#f97316,#fbbf24)",
-                  boxShadow: "0 1px 4px rgba(249,115,22,0.4)",
+                  width: `${pct}%`,
+                  background: next
+                    ? "linear-gradient(90deg,#f97316,#fbbf24)"
+                    : "linear-gradient(90deg, var(--color-teal), var(--color-teal-l))",
+                  boxShadow: next
+                    ? "0 1px 4px rgba(249,115,22,0.4)"
+                    : "0 1px 4px rgba(0,184,169,0.4)",
                 }}
               />
             </div>
             <div className="text-[0.68rem] text-muted mt-1">
-              3 more jobs to unlock
+              {next
+                ? `${toGo} more job${toGo === 1 ? "" : "s"} to unlock ${next.label}`
+                : `You're at Elite — dedicated account manager + API access`}
             </div>
           </div>
         </div>
@@ -207,7 +229,7 @@ export function DashboardD() {
                 }}
               >
                 <div
-                  className="w-[220px] flex-shrink-0 px-4 border-r border-border"
+                  className="w-[220px] shrink-0 px-4 border-r border-border"
                 >
                   <div className="text-[0.85rem] font-bold text-dark">
                     {row.title}

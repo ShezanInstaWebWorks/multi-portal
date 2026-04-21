@@ -2,6 +2,7 @@ import { AgencySidebar } from "@/components/layout/AgencySidebar";
 import { MobileDrawer } from "@/components/layout/MobileDrawer";
 import { AgencyBottomNav } from "@/components/layout/AgencyBottomNav";
 import { ImpersonationBanner } from "@/components/shared/ImpersonationBanner";
+import { CommandPalette } from "@/components/search/CommandPalette";
 import { resolveAgencyContext } from "@/lib/impersonation";
 
 export default async function AgencyLayout({ children }) {
@@ -23,6 +24,7 @@ export default async function AgencyLayout({ children }) {
         {children}
       </div>
       <AgencyBottomNav />
+      <CommandPalette />
     </div>
   );
 }

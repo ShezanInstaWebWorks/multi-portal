@@ -2,6 +2,7 @@
 
 import { KpiCard } from "./KpiCard";
 import { StatusPill } from "./StatusPill";
+import { tierFor, tierProgress } from "@/lib/priority";
 
 // Placeholder data — wire to Supabase in Step 13+.
 const KPIS = [
@@ -94,7 +95,8 @@ const ACTIVITIES = [
   },
 ];
 
-export function DashboardA() {
+export function DashboardA({ agency }) {
+  const jobsCount = agency?.total_jobs_count ?? 0;
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-5 lg:py-7 pb-20 lg:pb-8">
       {/* KPI row */}
@@ -107,7 +109,7 @@ export function DashboardA() {
       {/* 2-col: Active Orders + Quick Stats */}
       <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6 mb-6">
         <ActiveOrders />
-        <QuickStats />
+        <QuickStats jobsCount={jobsCount} />
       </div>
 
       {/* Activity feed */}
@@ -122,7 +124,7 @@ export function DashboardA() {
               }`}
             >
               <div
-                className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center text-[0.95rem] flex-shrink-0"
+                className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center text-[0.95rem] shrink-0"
                 style={{
                   background: a.iconBg,
                   border: `1px solid ${a.iconBorder}`,
@@ -138,7 +140,7 @@ export function DashboardA() {
                 </div>
               </div>
               {a.cta && (
-                <button className="flex-shrink-0 text-xs text-body font-semibold px-3 py-1.5 rounded-md bg-off hover:bg-lg transition-colors">
+                <button className="shrink-0 text-xs text-body font-semibold px-3 py-1.5 rounded-md bg-off hover:bg-lg transition-colors">
                   {a.cta}
                 </button>
               )}
@@ -261,15 +263,20 @@ function ActiveOrders() {
   );
 }
 
-function QuickStats() {
+function QuickStats({ jobsCount = 0 }) {
+  const { current, next } = tierFor(jobsCount);
+  const { toGo } = tierProgress(jobsCount);
+  const meta = next
+    ? `${toGo} until ${next.label} tier`
+    : `${current.label} tier — max unlocked`;
   return (
     <section>
       <SectionHeader title="Quick Stats" />
       <div className="flex flex-col gap-3">
         <SmallStat
           label="Total Jobs (All Time)"
-          value="7"
-          meta="3 until Priority Unlock"
+          value={String(jobsCount)}
+          meta={meta}
           accent="var(--color-teal)"
           valueColor="var(--color-teal)"
         />

@@ -203,7 +203,7 @@ function NavItem({ item, pathname }) {
         }
       }}
     >
-      <span className="w-4 h-4 flex items-center justify-center text-[0.9rem] flex-shrink-0">
+      <span className="w-4 h-4 flex items-center justify-center text-[0.9rem] shrink-0">
         {item.icon}
       </span>
       <span className="flex-1">{item.label}</span>

@@ -93,10 +93,10 @@ export default async function AdminFinancePage() {
                 const pct = top > 0 ? Math.round((s.retail / top) * 100) : 0;
                 return (
                   <div key={s.id} className="flex items-center gap-3">
-                    <div className="text-[0.85rem] text-body w-6 text-center flex-shrink-0">
+                    <div className="text-[0.85rem] text-body w-6 text-center shrink-0">
                       {i + 1}
                     </div>
-                    <div className="w-8 h-8 rounded-[10px] flex items-center justify-center text-[1rem] flex-shrink-0"
+                    <div className="w-8 h-8 rounded-[10px] flex items-center justify-center text-[1rem] shrink-0"
                          style={{ background: "var(--color-teal-pale)", color: "var(--color-teal)" }}>
                       {s.icon}
                     </div>

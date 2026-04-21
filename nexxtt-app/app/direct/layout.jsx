@@ -1,6 +1,7 @@
 import { DirectSidebar } from "@/components/layout/DirectSidebar";
 import { MobileDrawer } from "@/components/layout/MobileDrawer";
 import { DirectBottomNav } from "@/components/layout/DirectBottomNav";
+import { CommandPalette } from "@/components/search/CommandPalette";
 
 export default function DirectLayout({ children }) {
   return (
@@ -16,6 +17,7 @@ export default function DirectLayout({ children }) {
       </MobileDrawer>
       <div className="flex-1 flex flex-col lg:ml-sidebar">{children}</div>
       <DirectBottomNav />
+      <CommandPalette />
     </div>
   );
 }

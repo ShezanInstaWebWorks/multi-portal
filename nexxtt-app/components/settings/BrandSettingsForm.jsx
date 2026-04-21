@@ -86,7 +86,7 @@ export function BrandSettingsForm({ agency, brand }) {
           <Field label="Agency logo">
             <div className="flex items-center gap-4 flex-wrap">
               <div
-                className="w-[160px] h-[56px] rounded-[10px] flex items-center justify-center flex-shrink-0 overflow-hidden"
+                className="w-[160px] h-[56px] rounded-[10px] flex items-center justify-center shrink-0 overflow-hidden"
                 style={{
                   border: "1.5px dashed var(--color-border)",
                   background: "var(--color-off)",

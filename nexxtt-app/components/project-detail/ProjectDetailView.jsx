@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Download } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { formatCents } from "@/lib/money";
 import { ProjectStages, progressPct } from "./ProjectStages";
+import { DisputePanel } from "./DisputePanel";
+import { ClientActionPanel } from "./ClientActionPanel";
+import { DeliverablesPanel } from "./DeliverablesPanel";
 
 /**
  * Shared detail view for a single project.
@@ -17,11 +20,15 @@ import { ProjectStages, progressPct } from "./ProjectStages";
  */
 export function ProjectDetailView({
   viewer, project, service, brief, files, job, backHref, backLabel,
+  viewerIsAdmin = false,
 }) {
   const pct = progressPct(service?.slug, project.status);
   const profit = (project.retail_price_cents ?? 0) - (project.cost_price_cents ?? 0);
   const showCost = viewer === "agency";
-  const showApprove = viewer === "agency_client" && project.status === "in_review";
+  // agency_client and direct_client both sign off on their own work.
+  const canClientAct =
+    (viewer === "agency_client" || viewer === "direct_client") &&
+    project.status === "in_review";
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-5 lg:py-7 pb-20 lg:pb-8 max-w-[1100px] mx-auto w-full">
@@ -44,7 +51,7 @@ export function ProjectDetailView({
         <div className="flex items-start justify-between gap-4 flex-wrap relative z-[1]">
           <div className="flex items-start gap-4 min-w-0">
             <div
-              className="w-12 h-12 rounded-[14px] flex items-center justify-center text-[1.3rem] flex-shrink-0"
+              className="w-12 h-12 rounded-[14px] flex items-center justify-center text-[1.3rem] shrink-0"
               style={{ background: "rgba(0,184,169,0.18)" }}
             >
               {service?.icon ?? "•"}
@@ -130,43 +137,14 @@ export function ProjectDetailView({
         </div>
       </div>
 
-      {/* Client actions */}
-      {showApprove && (
-        <div
-          className="rounded-[14px] p-4 mb-5 flex items-center gap-3 flex-wrap"
-          style={{
-            background: "rgba(245,158,11,0.08)",
-            border: "1.5px solid rgba(245,158,11,0.3)",
-          }}
-        >
-          <div className="text-[1.1rem] flex-shrink-0">⏰</div>
-          <div className="flex-1 min-w-0">
-            <div className="text-[0.88rem] font-bold text-dark">
-              This project is waiting for your review
-            </div>
-            <div className="text-[0.75rem] text-muted mt-px">
-              Sign off to unlock the next stage, or request revisions with a
-              quick note.
-            </div>
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            <button
-              className="px-4 py-2 rounded-[10px] text-[0.82rem] font-extrabold text-white"
-              style={{
-                background: "var(--color-green)",
-                boxShadow: "0 2px 10px rgba(16,185,129,0.25)",
-              }}
-            >
-              ✓ Approve
-            </button>
-            <button
-              className="px-4 py-2 rounded-[10px] text-[0.82rem] font-semibold bg-white border border-border text-body hover:border-navy transition-colors"
-            >
-              Request revision
-            </button>
-          </div>
-        </div>
-      )}
+      <DisputePanel
+        projectId={project.id}
+        status={project.status}
+        viewerIsAdmin={viewerIsAdmin}
+      />
+
+      {/* Client actions — real wiring, client_client or direct_client only */}
+      {canClientAct && <ClientActionPanel projectId={project.id} />}
 
       {/* 2-col: stages + (brief / files) */}
       <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-5 items-start">
@@ -196,49 +174,11 @@ export function ProjectDetailView({
             </div>
           </section>
 
-          <section className="bg-white border border-border rounded-[16px] p-5 shadow-sm">
-            <h2 className="font-display text-[0.95rem] font-extrabold text-dark mb-3">
-              Deliverables
-            </h2>
-            {(!files || files.length === 0) ? (
-              <div className="py-6 text-center text-sm text-muted">
-                <div className="text-2xl mb-2 opacity-30">📦</div>
-                No files yet — they&apos;ll appear here once the project is delivered.
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {files.map((f) => (
-                  <div
-                    key={f.id}
-                    className="flex items-center gap-3 p-3 rounded-[10px] border border-border hover:border-teal/50 hover:bg-off transition-colors"
-                  >
-                    <div
-                      className="w-9 h-9 rounded-lg flex items-center justify-center text-[1rem] flex-shrink-0"
-                      style={{ background: "var(--color-teal-pale)", color: "var(--color-teal)" }}
-                    >
-                      📄
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[0.85rem] font-semibold text-dark truncate">
-                        {f.name}
-                      </div>
-                      <div className="text-[0.72rem] text-muted">
-                        {f.size_bytes ? `${Math.round(f.size_bytes / 1024)} KB · ` : ""}
-                        {new Date(f.uploaded_at).toLocaleDateString("en-AU", { day: "2-digit", month: "short" })}
-                      </div>
-                    </div>
-                    <button
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[0.72rem] font-semibold bg-off text-body hover:bg-lg"
-                      title="Download (signed URL flow coming in the Storage session)"
-                    >
-                      <Download className="w-3 h-3" />
-                      Get
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
+          <DeliverablesPanel
+            projectId={project.id}
+            initialFiles={files}
+            canUpload={viewer === "agency" || viewerIsAdmin}
+          />
 
           <section className="bg-white border border-border rounded-[16px] p-5 shadow-sm">
             <h2 className="font-display text-[0.95rem] font-extrabold text-dark mb-3">
@@ -308,7 +248,7 @@ function ActivityItem({ color, title, time }) {
   return (
     <div className="flex items-start gap-3">
       <div
-        className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"
+        className="w-2 h-2 rounded-full mt-1.5 shrink-0"
         style={{ background: color, boxShadow: `0 0 4px ${color}` }}
       />
       <div className="flex-1 min-w-0">

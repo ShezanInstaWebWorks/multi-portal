@@ -45,7 +45,7 @@ export function ClientProjectList({ jobs, basePath }) {
             border: "1.5px solid rgba(245,158,11,0.3)",
           }}
         >
-          <span className="text-[1.1rem] flex-shrink-0">⏰</span>
+          <span className="text-[1.1rem] shrink-0">⏰</span>
           <div className="flex-1 min-w-0">
             <div className="text-[0.85rem] font-bold text-dark">
               {actionNeeded} {actionNeeded === 1 ? "deliverable" : "deliverables"} need your approval
@@ -73,6 +73,7 @@ export function ClientProjectList({ jobs, basePath }) {
             <JobCard
               key={j.id}
               job={j}
+              basePath={basePath}
               expanded={expanded.has(j.id)}
               onToggle={() =>
                 setExpanded((s) => {
@@ -114,7 +115,7 @@ function Tab({ label, active, onClick }) {
   );
 }
 
-function JobCard({ job, expanded, onToggle }) {
+function JobCard({ job, basePath, expanded, onToggle }) {
   const created = new Date(job.created_at).toLocaleDateString("en-AU", {
     day: "2-digit",
     month: "short",
@@ -142,7 +143,7 @@ function JobCard({ job, expanded, onToggle }) {
         }}
       >
         <div
-          className="w-7 h-7 rounded-full flex items-center justify-center text-[0.9rem] flex-shrink-0 transition-transform"
+          className="w-7 h-7 rounded-full flex items-center justify-center text-[0.9rem] shrink-0 transition-transform"
           style={{
             background: expanded ? "var(--wl-accent)" : "transparent",
             color: expanded ? "var(--wl-primary)" : "var(--color-muted)",
@@ -178,7 +179,7 @@ function JobCard({ job, expanded, onToggle }) {
           </div>
         </div>
 
-        <div className="hidden sm:flex gap-1.5 flex-shrink-0 flex-wrap max-w-[220px]">
+        <div className="hidden sm:flex gap-1.5 shrink-0 flex-wrap max-w-[220px]">
           {serviceTags.map((s, i) => (
             <span
               key={i}
@@ -233,7 +234,7 @@ function ProjectRow({ project, isLast, basePath }) {
       } ${href ? "cursor-pointer" : ""}`}
     >
       <div
-        className="w-2 h-2 rounded-full flex-shrink-0"
+        className="w-2 h-2 rounded-full shrink-0"
         style={{
           background: needsAction ? "var(--color-amber)" : "var(--wl-accent)",
         }}

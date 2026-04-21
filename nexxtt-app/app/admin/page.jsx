@@ -24,7 +24,8 @@ export default async function AdminDashboardPage() {
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
   const [agenciesRes, clientsRes, directRes, refPartnersRes,
-         ordersMtdRes, liveOrdersRes, pendingCommRes, gmvMtdRes, agenciesForBoardRes]
+         ordersMtdRes, liveOrdersRes, pendingCommRes, gmvMtdRes, agenciesForBoardRes,
+         disputedRes]
     = await Promise.all([
       admin.from("agencies").select("id, name, slug, status, balance_cents, plan, approved_at, joined_at").order("joined_at", { ascending: false }),
       admin.from("clients").select("id").limit(1000),
@@ -37,6 +38,7 @@ export default async function AdminDashboardPage() {
       admin.from("commission_entries").select("commission_cents").eq("status", "pending"),
       admin.from("jobs").select("total_retail_cents").gte("created_at", monthStart),
       admin.from("jobs").select("agency_id, total_retail_cents").not("agency_id", "is", null).gte("created_at", monthStart),
+      admin.from("projects").select("id", { count: "exact", head: true }).eq("status", "disputed"),
     ]);
 
   // KPIs
@@ -74,11 +76,41 @@ export default async function AdminDashboardPage() {
 
   // Pending agencies need approval
   const pendingAgencies = (agenciesRes.data ?? []).filter((a) => a.status === "pending").length;
+  const disputedCount   = disputedRes.count ?? 0;
 
   return (
     <>
       <AdminTopbar title="Admin Dashboard" />
       <main id="main-content" className="flex-1 px-4 sm:px-6 lg:px-8 py-5 lg:py-7 pb-20 lg:pb-8">
+        {/* Disputed projects — highest-priority alert */}
+        {disputedCount > 0 && (
+          <div
+            className="rounded-[14px] p-4 mb-3 flex items-center gap-3 flex-wrap"
+            style={{
+              background: "rgba(239,68,68,0.08)",
+              border: "1.5px solid rgba(239,68,68,0.3)",
+            }}
+          >
+            <span className="text-[1.1rem] shrink-0">⚑</span>
+            <div className="flex-1 min-w-0 text-[0.85rem] text-dark">
+              <strong>
+                {disputedCount} disputed project{disputedCount === 1 ? "" : "s"}
+              </strong>{" "}
+              waiting for admin resolution.
+            </div>
+            <Link
+              href="/admin/orders?status=disputed"
+              className="px-3.5 py-1.5 rounded-[10px] text-[0.78rem] font-extrabold text-white"
+              style={{
+                background: "var(--color-red)",
+                boxShadow: "0 2px 10px rgba(239,68,68,0.25)",
+              }}
+            >
+              Resolve →
+            </Link>
+          </div>
+        )}
+
         {/* Action-needed notice */}
         {(pendingAgencies > 0 || commissionsDue > 0) && (
           <div
@@ -88,7 +120,7 @@ export default async function AdminDashboardPage() {
               border: "1px solid rgba(245,158,11,0.25)",
             }}
           >
-            <span className="text-[1.1rem] flex-shrink-0">⚠️</span>
+            <span className="text-[1.1rem] shrink-0">⚠️</span>
             <div className="flex-1 min-w-0 text-[0.85rem] text-dark">
               <strong>Attention:</strong>{" "}
               {pendingAgencies > 0 && <>{pendingAgencies} agency pending approval · </>}

@@ -11,7 +11,7 @@ export function ClientTopbar({ brand, userName }) {
 
   return (
     <header
-      className="h-14 flex items-center justify-between px-5 lg:px-7 flex-shrink-0 sticky top-0 z-30"
+      className="h-14 flex items-center justify-between px-5 lg:px-7 shrink-0 sticky top-0 z-30"
       style={{
         background: "var(--wl-primary)",
         color: "white",

@@ -159,7 +159,7 @@ function OrderCard({ job, expanded, onToggle }) {
         className="w-full flex items-center gap-3 text-left px-4 lg:px-5 py-4 hover:bg-off transition-colors"
       >
         <ChevronRight
-          className="w-4 h-4 text-muted flex-shrink-0 transition-transform duration-200"
+          className="w-4 h-4 text-muted shrink-0 transition-transform duration-200"
           style={{ transform: expanded ? "rotate(90deg)" : "rotate(0deg)" }}
         />
         {/* Meta block (grows on mobile) */}
@@ -207,7 +207,7 @@ function OrderCard({ job, expanded, onToggle }) {
         </div>
 
         {/* Numbers */}
-        <div className="flex items-baseline gap-3 ml-3 pl-3 border-l border-border flex-shrink-0">
+        <div className="flex items-baseline gap-3 ml-3 pl-3 border-l border-border shrink-0">
           <div className="text-right">
             <div className="text-[0.68rem] text-muted uppercase" style={{ letterSpacing: "0.08em" }}>
               COST
@@ -261,7 +261,7 @@ function ProjectRow({ jobId, project }) {
       className="flex items-center gap-3 px-4 lg:px-5 py-3 cursor-pointer border-b border-border last:border-0 hover:bg-teal-pale transition-colors"
     >
       <div
-        className="w-2 h-2 rounded-full flex-shrink-0 ml-5"
+        className="w-2 h-2 rounded-full shrink-0 ml-5"
         style={{ background: dotColor, boxShadow: `0 0 6px ${dotColor}66` }}
       />
       <div className="flex-1 min-w-0">

@@ -230,7 +230,7 @@ export function RefDashboard({ partner, referrals, commissions, referredById, re
                       </span>
                     </div>
                   </div>
-                  <div className="text-right flex-shrink-0">
+                  <div className="text-right shrink-0">
                     <div className="font-display text-[1.05rem] font-extrabold text-dark">
                       {formatCents(s.lifetime)}
                     </div>
@@ -360,7 +360,7 @@ function HowStep({ n, children }) {
   return (
     <div className="flex items-start gap-3">
       <div
-        className="w-6 h-6 rounded-full flex items-center justify-center text-[0.68rem] font-extrabold flex-shrink-0 mt-px"
+        className="w-6 h-6 rounded-full flex items-center justify-center text-[0.68rem] font-extrabold shrink-0 mt-px"
         style={{ background: "var(--color-navy)", color: "white" }}
       >
         {n}

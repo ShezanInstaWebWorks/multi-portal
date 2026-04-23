@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createServerSupabaseClient, createAdminSupabaseClient } from "@/lib/supabase/server";
 import { AdminTopbar } from "@/components/layout/AdminTopbar";
 import { CronJobCard } from "@/components/admin/CronJobCard";
+import { PasswordChangeCard } from "@/components/settings/PasswordChangeCard";
 
 export const metadata = { title: "Platform Settings · Admin · nexxtt.io", robots: "noindex, nofollow" };
 
@@ -89,6 +90,11 @@ export default async function AdminSettingsPage() {
             lastRun={formatRun(lastCommissionRun)}
           />
         </Section>
+
+        {/* Admin's own account */}
+        <div className="mb-4">
+          <PasswordChangeCard email={user.email} />
+        </div>
 
         {/* Admin action log */}
         <Section title="Recent admin actions">

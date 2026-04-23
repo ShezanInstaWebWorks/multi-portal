@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createAdminSupabaseClient, createServerSupabaseClient } from "@/lib/supabase/server";
 import { AdminTopbar } from "@/components/layout/AdminTopbar";
-import { StatusBadge } from "@/components/shared/StatusBadge";
+import { AdminOrdersTable } from "@/components/admin/AdminOrdersTable";
 import { formatCents } from "@/lib/money";
 
 export const metadata = { title: "All Orders · Admin · nexxtt.io", robots: "noindex, nofollow" };
@@ -19,7 +19,7 @@ export default async function AdminOrdersPage({ searchParams }) {
     .from("jobs")
     .select(
       `id, job_number, status, is_rush, total_cost_cents, total_retail_cents, agency_id, direct_client_user_id, client_id, created_at,
-       projects(service_id, services(name, icon))`
+       projects(id, service_id, services(name, icon))`
     )
     .order("created_at", { ascending: false })
     .limit(200);
@@ -65,82 +65,38 @@ export default async function AdminOrdersPage({ searchParams }) {
           <Stat label="Avg Platform Margin" value={`${margin}%`}     accent="var(--color-green)" />
         </div>
 
-        {/* Table */}
-        <div className="bg-white rounded-[16px] border border-border shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px]">
-              <thead>
-                <tr className="bg-off">
-                  {["Job", "Service", "Via", "Customer", "Status", "Cost", "Retail", "Date"].map((h) => (
-                    <th
-                      key={h}
-                      className="text-left px-4 py-3 text-[0.72rem] font-bold text-muted uppercase"
-                      style={{ letterSpacing: "0.08em" }}
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {(jobs ?? []).map((j, i) => {
-                  const who = j.agency_id ? "Agency" : j.direct_client_user_id ? "Direct" : "—";
-                  const whoName = j.agency_id
-                    ? agencyName.get(j.agency_id) ?? "—"
-                    : j.direct_client_user_id
-                    ? directName.get(j.direct_client_user_id) ?? "—"
-                    : "—";
-                  const clientLabel = j.client_id ? clientName.get(j.client_id) : null;
-                  const firstService = (j.projects ?? [])[0]?.services;
-                  return (
-                    <tr
-                      key={j.id}
-                      className={`hover:bg-teal-pale transition-colors ${
-                        i < (jobs?.length ?? 0) - 1 ? "border-b border-border" : ""
-                      }`}
-                    >
-                      <td className="px-4 py-3 font-mono text-[0.78rem] text-body">
-                        {j.job_number}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="font-semibold text-dark flex items-center gap-1.5">
-                          <span>{firstService?.icon}</span>
-                          <span>{firstService?.name ?? "—"}</span>
-                        </div>
-                        <div className="text-[0.72rem] text-muted">
-                          {(j.projects?.length ?? 0)} project{(j.projects?.length ?? 0) === 1 ? "" : "s"}
-                          {j.is_rush && " · rush"}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <PortalPill kind={who} />
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="font-semibold text-dark text-[0.85rem]">{whoName}</div>
-                        {clientLabel && (
-                          <div className="text-[0.72rem] text-muted">for {clientLabel}</div>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <StatusBadge status={j.status} />
-                      </td>
-                      <td className="px-4 py-3 text-body text-[0.85rem]">{formatCents(j.total_cost_cents)}</td>
-                      <td className="px-4 py-3 font-bold text-dark text-[0.85rem]">{formatCents(j.total_retail_cents)}</td>
-                      <td className="px-4 py-3 text-[0.78rem] text-muted">
-                        {new Date(j.created_at).toLocaleDateString("en-AU", {
-                          day: "2-digit", month: "short",
-                        })}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {jobs?.length === 0 && (
+        {(jobs?.length ?? 0) === 0 ? (
           <div className="text-center py-10 text-sm text-muted">No orders match the current filter.</div>
+        ) : (
+          <AdminOrdersTable rows={(jobs ?? []).map((j) => {
+            const via = j.agency_id ? "Agency" : j.direct_client_user_id ? "Direct" : "—";
+            const whoName = j.agency_id
+              ? agencyName.get(j.agency_id) ?? "—"
+              : j.direct_client_user_id
+              ? directName.get(j.direct_client_user_id) ?? "—"
+              : "—";
+            const clientLabel = j.client_id ? clientName.get(j.client_id) : null;
+            const firstProject = (j.projects ?? [])[0];
+            const firstService = firstProject?.services;
+            return {
+              id: j.id,
+              job_number: j.job_number,
+              status: j.status,
+              is_rush: j.is_rush,
+              total_cost_cents: j.total_cost_cents,
+              total_retail_cents: j.total_retail_cents,
+              via,
+              whoName,
+              clientLabel,
+              serviceName: firstService?.name ?? null,
+              serviceIcon: firstService?.icon ?? "•",
+              projectCount: j.projects?.length ?? 0,
+              firstProjectId: firstProject?.id ?? null,
+              dateLabel: new Date(j.created_at).toLocaleDateString("en-AU", {
+                day: "2-digit", month: "short",
+              }),
+            };
+          })} />
         )}
       </main>
     </>
@@ -164,18 +120,3 @@ function Stat({ label, value, accent = "var(--color-muted)" }) {
   );
 }
 
-function PortalPill({ kind }) {
-  const map = {
-    Agency: { bg: "var(--color-teal-bg)",    border: "var(--color-teal-bdr)", color: "var(--color-teal)" },
-    Direct: { bg: "rgba(16,185,129,0.08)",    border: "rgba(16,185,129,0.22)", color: "var(--color-green)" },
-  };
-  const m = map[kind] ?? map.Agency;
-  return (
-    <span
-      className="inline-flex items-center px-2 py-[2px] rounded-full text-[0.65rem] font-bold whitespace-nowrap"
-      style={{ background: m.bg, color: m.color, border: `1px solid ${m.border}` }}
-    >
-      {kind}
-    </span>
-  );
-}

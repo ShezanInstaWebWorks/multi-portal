@@ -8,6 +8,7 @@ import { NexxttLogo } from "@/components/auth/NexxttLogo";
 
 const NAV = [
   { href: "/direct/dashboard",  icon: "🏠", label: "Dashboard" },
+  { href: "/direct/requests",    icon: "💬", label: "Requests & Chat" },
   { href: "/direct/orders",      icon: "📋", label: "My Orders" },
   { href: "/direct/orders/new",  icon: "✚",  label: "New Order" },
   { href: "/direct/account",     icon: "⚙️", label: "Account" },

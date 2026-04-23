@@ -3,6 +3,7 @@ import { createAdminSupabaseClient, createServerSupabaseClient } from "@/lib/sup
 import { AdminTopbar } from "@/components/layout/AdminTopbar";
 import { formatCents } from "@/lib/money";
 import { ImpersonateButton } from "@/components/admin/ImpersonateButton";
+import { AgencyApprovalActions } from "@/components/admin/AgencyApprovalActions";
 
 export const metadata = { title: "Agencies · Admin · nexxtt.io", robots: "noindex, nofollow" };
 
@@ -118,7 +119,10 @@ export default async function AdminAgenciesPage() {
                         })}
                       </td>
                       <td className="px-4 py-3">
-                        <ImpersonateButton agencyId={a.id} agencyName={a.name} compact />
+                        <div className="flex gap-1.5 flex-wrap">
+                          <AgencyApprovalActions agencyId={a.id} status={a.status} />
+                          <ImpersonateButton agencyId={a.id} agencyName={a.name} compact />
+                        </div>
                       </td>
                     </tr>
                   );
@@ -156,7 +160,8 @@ export default async function AdminAgenciesPage() {
                     <span>{formatCents(s.retail)} retail</span>
                     <span>Bal {formatCents(a.balance_cents)}</span>
                   </div>
-                  <div className="mt-3">
+                  <div className="mt-3 flex gap-1.5 flex-wrap">
+                    <AgencyApprovalActions agencyId={a.id} status={a.status} />
                     <ImpersonateButton agencyId={a.id} agencyName={a.name} compact />
                   </div>
                 </div>

@@ -1,7 +1,14 @@
+import crypto from "node:crypto";
 import { createServerSupabaseClient, createAdminSupabaseClient } from "@/lib/supabase/server";
 import { isValidSlug, slugify } from "@/lib/slug";
 import { sendEmail } from "@/lib/email/send";
 import { ClientInviteEmail } from "@/emails/ClientInviteEmail";
+
+// 12-char URL-safe password. Enough entropy for a short-lived temp credential
+// without being unreadable. Example: "xK9mPn3Lt-4Q".
+function generateTempPassword() {
+  return crypto.randomBytes(9).toString("base64url").slice(0, 12);
+}
 
 export async function POST(req) {
   const supabase = await createServerSupabaseClient();
@@ -91,33 +98,31 @@ export async function POST(req) {
     );
   }
 
-  // Generate magic link for the client (creates the auth.users row for type 'invite').
-  // NOTE: Resend is not yet wired, so we return the actionLink for the agency to
-  // copy manually. The Supabase invite email fallback only fires if SMTP is set.
-  const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/portal/${slug}/setup`;
-
-  const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
-    type: "invite",
+  // Create the auth user with a temporary password. The client signs in directly
+  // with their email + this password — no magic-link setup flow. The password
+  // is returned once in the API response so the inviting agency can display it
+  // on the success panel (and it's embedded in the outgoing email).
+  const tempPassword = generateTempPassword();
+  const { data: authData, error: authErr } = await admin.auth.admin.createUser({
     email: contactEmail.toLowerCase(),
-    options: {
-      redirectTo,
-      data: {
-        role: "agency_client",
-        first_name: contactName.split(/\s+/)[0] ?? contactName,
-        last_name: contactName.split(/\s+/).slice(1).join(" ") || null,
-        agency_id: agencyId,
-        invited_by: user.id,
-      },
+    password: tempPassword,
+    email_confirm: true, // skip confirm-email step; we issued the password ourselves
+    user_metadata: {
+      role: "agency_client",
+      first_name: contactName.split(/\s+/)[0] ?? contactName,
+      last_name: contactName.split(/\s+/).slice(1).join(" ") || null,
+      agency_id: agencyId,
+      invited_by: user.id,
     },
   });
-  if (linkErr) {
+  if (authErr) {
+    const status = /already.*registered|exists/i.test(authErr.message) ? 409 : 500;
     return Response.json(
-      { error: linkErr.message, code: "LINK_GEN_ERROR" },
-      { status: 500 }
+      { error: authErr.message, code: status === 409 ? "EMAIL_IN_USE_AUTH" : "USER_CREATE_ERROR" },
+      { status }
     );
   }
-  const invitedUserId = linkData?.user?.id ?? null;
-  const actionLink = linkData?.properties?.action_link ?? null;
+  const invitedUserId = authData?.user?.id ?? null;
 
   const now = new Date();
   const expires = new Date(Date.now() + 7 * 86400000);
@@ -173,7 +178,9 @@ export async function POST(req) {
   };
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-  const portalUrl = `${appUrl.replace(/^https?:\/\//, "")}/portal/${brand.portal_slug ?? "agency"}/${slug}`;
+  const portalPath = `/portal/${brand.portal_slug ?? "agency"}/${slug}`;
+  const portalUrl = `${appUrl.replace(/^https?:\/\//, "")}${portalPath}`;
+  const loginUrl = `${appUrl}/login?next=${encodeURIComponent(portalPath)}`;
   const displayName = brand.display_name ?? agencyRes.data?.name ?? "Your agency";
 
   // Send branded email — no-ops silently if RESEND_API_KEY isn't set.
@@ -188,9 +195,11 @@ export async function POST(req) {
         contactName={contactName.trim()}
         subject={inviteSubject || `Your project portal is ready — ${displayName}`}
         message={inviteMessage || `Hi ${contactName.split(/\s+/)[0] ?? "there"},\n\nYour portal is ready.`}
-        cta={inviteCta || "Set Up My Portal →"}
+        cta={inviteCta || "Sign In →"}
         signOff={signOffName || brand.sign_off_name || displayName}
-        actionLink={actionLink}
+        loginEmail={contactEmail.toLowerCase()}
+        tempPassword={tempPassword}
+        loginUrl={loginUrl}
         portalUrl={portalUrl}
       />
     ),
@@ -199,8 +208,11 @@ export async function POST(req) {
   return Response.json(
     {
       client,
-      actionLink,
       invitedUserId,
+      loginEmail: contactEmail.toLowerCase(),
+      tempPassword,
+      loginUrl,
+      portalUrl,
       emailSent: emailResult.sent === true,
       emailReason: emailResult.reason,
       previewMessage: inviteMessage,

@@ -9,6 +9,7 @@ import { X } from "lucide-react";
 
 const MAIN = [
   { href: "/agency/dashboard",   icon: "🏠", label: "Dashboard" },
+  { href: "/agency/requests",    icon: "💬", label: "Requests & Chat" },
   { href: "/agency/orders/new",  icon: "✚",  label: "New Order" },
   { href: "/agency/orders",      icon: "📋", label: "All Orders", badge: "4" },
 ];

@@ -7,8 +7,9 @@ import { useAgencyStore } from "@/lib/stores/useAgencyStore";
 import { NexxttLogo } from "@/components/auth/NexxttLogo";
 
 const OVERVIEW = [
-  { href: "/admin",        icon: "🛡️", label: "Admin Dashboard" },
-  { href: "/admin/orders",  icon: "📋", label: "All Orders" },
+  { href: "/admin",         icon: "🛡️", label: "Admin Dashboard" },
+  { href: "/admin/requests", icon: "💬", label: "Requests & Chat" },
+  { href: "/admin/orders",   icon: "📋", label: "All Orders" },
 ];
 const PORTALS = [
   { href: "/admin/agencies",  icon: "🏢", label: "Agencies" },

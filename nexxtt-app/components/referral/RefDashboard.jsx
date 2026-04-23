@@ -155,7 +155,7 @@ export function RefDashboard({ partner, referrals, commissions, referredById, re
                   label="Email"
                 />
                 <ShareButton
-                  href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent("https://" + referralUrl)}`}
+                  href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(referralUrl)}`}
                   icon={<Share2 className="w-3.5 h-3.5" />}
                   label="LinkedIn"
                 />

@@ -18,7 +18,7 @@ export default async function EmailPreviewPage() {
     {
       key: "client-invite",
       label: "Client invite",
-      description: "White-label agency → client invite with magic link.",
+      description: "White-label agency → client invite with temporary password credentials.",
       html: await render(
         <ClientInviteEmail
           brand={{
@@ -28,11 +28,13 @@ export default async function EmailPreviewPage() {
           }}
           contactName="Lena Marsh"
           subject="Your project portal is ready — Bright Agency Co."
-          message={`Hi Lena,\n\nWe're excited to welcome you to your project portal! Track your project progress, review and approve deliverables, and download your final files — all in one place.`}
-          cta="Set Up My Portal →"
+          message={`Hi Lena,\n\nWe're excited to welcome you to your project portal! Track your project progress, review and approve deliverables, and download your final files — all in one place.\n\nYour sign-in details are below. You can change your password after you sign in.`}
+          cta="Sign In →"
           signOff="Alex Johnson, Bright Agency Co."
-          actionLink="https://example.com/auth/verify?token=sample"
-          portalUrl="bright-agency.nexxtt.io/portal/riverview-dental"
+          loginEmail="lena@riverviewdental.com.au"
+          tempPassword="xK9mPn3Lt-4Q"
+          loginUrl="https://nexxtt.io/login?next=%2Fportal%2Fbright-agency%2Friverview-dental"
+          portalUrl="nexxtt.io/portal/bright-agency/riverview-dental"
         />
       ),
     },

@@ -74,9 +74,30 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-display);
-  color: var(--color-dark);
+/* Defaults for headings — kept inside @layer base so any Tailwind text-*
+   utility (e.g. text-white on a navy hero) wins over this rule. */
+@layer base {
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    color: var(--color-dark);
+  }
+
+  /* Compact data tables — every <table> in the app uses these defaults so
+     individual page padding (px-4 py-3) is overridden to a tighter rhythm.
+     MUI DataGrid is div-based and unaffected. Email templates render in
+     external clients and aren't styled by this stylesheet. */
+  table th,
+  table td {
+    padding: 0.4rem 0.7rem;
+  }
+  table th {
+    font-size: 0.7rem;
+    line-height: 1.1;
+  }
+  table td {
+    font-size: 0.82rem;
+    line-height: 1.3;
+  }
 }
 
 /* Prevent iOS Safari input zoom — per MD §11 */

@@ -54,7 +54,7 @@ export const resolveAgencyContext = cache(async () => {
     .single();
   const impersonatedAgencyPromise = impersonatedId
     ? admin.from("agencies")
-        .select("id, name, plan, balance_cents, total_jobs_count")
+        .select("id, name, status, plan, balance_cents, total_jobs_count")
         .eq("id", impersonatedId)
         .maybeSingle()
     : Promise.resolve({ data: null });
@@ -80,7 +80,7 @@ export const resolveAgencyContext = cache(async () => {
   if (profile?.agency_id) {
     const { data } = await admin
       .from("agencies")
-      .select("id, name, plan, balance_cents, total_jobs_count")
+      .select("id, name, status, plan, balance_cents, total_jobs_count")
       .eq("id", profile.agency_id)
       .maybeSingle();
     agency = data;

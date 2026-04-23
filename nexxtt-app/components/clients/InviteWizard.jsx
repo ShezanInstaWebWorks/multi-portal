@@ -37,8 +37,8 @@ export function InviteWizard({ agency, brand, profileName }) {
     subject:       `Your project portal is ready — ${agencyBrandName}`,
     message:
       brand?.default_invite_message ??
-      `Hi,\n\nWe're excited to welcome you to your project portal! Track your project progress, review and approve deliverables, and download your final files — all in one place.`,
-    cta: "Set Up My Portal →",
+      `Hi,\n\nWe're excited to welcome you to your project portal! Track your project progress, review and approve deliverables, and download your final files — all in one place.\n\nYour sign-in details are below. You can change your password after you sign in.`,
+    cta: "Sign In →",
     signoff: defaultSignoff,
   });
 
@@ -100,13 +100,26 @@ export function InviteWizard({ agency, brand, profileName }) {
     setSubmitting(false);
   }
 
-  // After successful send, show the result card (with copyable magic link).
+  // After successful send, show the result card with the credentials the agency
+  // can copy/paste if the client didn't receive (or didn't open) the email.
   if (result) {
-    return <InviteSuccess result={result} router={router} onCopy={() => {
-      navigator.clipboard.writeText(result.actionLink ?? "");
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }} copied={copied} portalUrl={portalUrl} />;
+    const credentialBlock =
+      `Login: ${result.loginUrl ?? ""}\n` +
+      `Email: ${result.loginEmail ?? ""}\n` +
+      `Temporary password: ${result.tempPassword ?? ""}`;
+    return (
+      <InviteSuccess
+        result={result}
+        router={router}
+        onCopy={() => {
+          navigator.clipboard.writeText(credentialBlock);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        }}
+        copied={copied}
+        portalUrl={portalUrl}
+      />
+    );
   }
 
   const stepProps = { draft, setDraft, agencyBrandName, agencyPortalSlug, derivedSlug, portalUrl, profileName, INDUSTRIES };
@@ -329,8 +342,8 @@ function Step1Details({ draft, setDraft, agencyBrandName, portalUrl, INDUSTRIES 
           What your client gets
         </div>
         <div className="flex flex-col gap-2.5">
-          <Benefit icon="📧" title="Branded invite email"   desc={`Sent from ${agencyBrandName}, not nexxtt.io`} />
-          <Benefit icon="🔐" title="Magic-link login"       desc="One click to set up their account. No password needed initially." />
+          <Benefit icon="📧" title="Branded invite email"    desc={`Sent from ${agencyBrandName}, not nexxtt.io`} />
+          <Benefit icon="🔐" title="Temporary password"      desc="Generated on invite. Client signs in instantly — no setup flow required." />
           <Benefit icon="🌐" title="Their own portal URL"    desc={portalUrl} />
           <Benefit icon="📋" title="Live project dashboard"  desc="Track progress, review drafts, download final files." />
         </div>
@@ -477,10 +490,10 @@ function Step3Confirm({ draft, agencyBrandName, portalUrl, error }) {
             What happens after you send
           </div>
           <div className="flex flex-col gap-3">
-            <TimelineStep n={1} text={`${draft.contactName || "Your client"} receives the branded email from ${agencyBrandName} immediately.`} />
-            <TimelineStep n={2} text="They click the magic link → set a password → see their project dashboard." />
+            <TimelineStep n={1} text={`${draft.contactName || "Your client"} receives the branded email from ${agencyBrandName} with their email + temporary password.`} />
+            <TimelineStep n={2} text="They sign in directly at the portal URL — no setup, no waiting." />
             <TimelineStep n={3} text="Client Manager updates to “Active ✓” once they sign in." />
-            <TimelineStep n={4} dim text="If they don't click within 7 days, you can resend anytime." />
+            <TimelineStep n={4} dim text="You can also copy the credentials from the success screen to share them manually." />
           </div>
         </div>
 
@@ -514,78 +527,101 @@ function Step3Confirm({ draft, agencyBrandName, portalUrl, error }) {
 
 // ── Success panel ─────────────────────────────────────────────────────
 function InviteSuccess({ result, router, onCopy, copied, portalUrl }) {
-  const link = result.actionLink;
   const emailSent = result.emailSent === true;
+  const loginEmail = result.loginEmail ?? "";
+  const tempPassword = result.tempPassword ?? "";
+  const loginUrl = result.loginUrl ?? "";
+
   return (
     <div className="max-w-[640px] mx-auto">
       <div
-        className="rounded-[16px] p-8 text-center shadow-md"
+        className="rounded-[16px] p-6 sm:p-8 shadow-md"
         style={{
-          background:
-            "linear-gradient(135deg, var(--color-teal-pale), white)",
+          background: "linear-gradient(135deg, var(--color-teal-pale), white)",
           border: "1.5px solid var(--color-teal)",
         }}
       >
-        <div
-          className="w-14 h-14 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl"
-          style={{
-            background: "var(--color-teal)",
-            color: "white",
-            boxShadow: "0 4px 14px rgba(0,184,169,0.35)",
-          }}
-        >
-          <Check className="w-7 h-7" strokeWidth={3} />
-        </div>
-        <h2 className="font-display text-[1.5rem] font-extrabold text-dark">
-          Invite prepared
-        </h2>
-        <p className="text-sm text-muted mt-1 mb-5 max-w-[440px] mx-auto">
-          {emailSent
-            ? "Your client has been emailed. You'll see them in the Client Manager as “Pending Invite” until they sign in."
-            : "The client row has been created. Email delivery via Resend arrives in a later session — copy the magic link below and send it manually for now."}
-        </p>
-
-        {link && (
+        <div className="text-center">
           <div
-            className="rounded-[10px] bg-white px-3.5 py-3 text-left flex items-center gap-2 mb-4"
-            style={{ border: "1px solid var(--color-border)" }}
-          >
-            <code className="flex-1 text-[0.78rem] text-body break-all font-mono">
-              {link}
-            </code>
-            <button
-              onClick={onCopy}
-              className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[0.75rem] font-semibold text-white"
-              style={{ background: "var(--color-teal)" }}
-            >
-              <Copy className="w-3.5 h-3.5" />
-              {copied ? "Copied" : "Copy"}
-            </button>
-          </div>
-        )}
-
-        <div className="flex flex-col sm:flex-row gap-2 justify-center">
-          <button
-            onClick={() => router.push("/agency/clients")}
-            className="px-5 py-2.5 rounded-[10px] text-sm font-semibold text-white"
+            className="w-14 h-14 rounded-full mx-auto mb-4 flex items-center justify-center"
             style={{
               background: "var(--color-teal)",
-              boxShadow: "0 2px 10px rgba(0,184,169,0.25)",
+              color: "white",
+              boxShadow: "0 4px 14px rgba(0,184,169,0.35)",
             }}
+          >
+            <Check className="w-7 h-7" strokeWidth={3} />
+          </div>
+          <h2 className="font-display text-[1.5rem] font-extrabold text-dark">
+            Client account created
+          </h2>
+          <p className="text-sm text-muted mt-1 mb-5 max-w-[460px] mx-auto">
+            {emailSent
+              ? "An email with their sign-in details has been sent. They can sign in immediately with the temporary password below."
+              : "Email delivery isn't wired yet — copy the credentials below and send them manually. The account is live and can sign in right now."}
+          </p>
+        </div>
+
+        {/* Credentials block — highlighted so the agency can copy them easily */}
+        <div
+          className="rounded-[12px] bg-white p-4 sm:p-5 mb-4 text-left"
+          style={{ border: "1px solid var(--color-border)" }}
+        >
+          <div
+            className="text-[0.68rem] font-bold uppercase text-muted mb-3"
+            style={{ letterSpacing: "0.1em" }}
+          >
+            Sign-in details
+          </div>
+          <CredentialLine label="Login URL"  value={loginUrl} />
+          <CredentialLine label="Email"      value={loginEmail} mono />
+          <CredentialLine label="Password"   value={tempPassword} mono highlight />
+          <p className="text-[0.72rem] text-muted mt-3 mb-0 leading-relaxed">
+            This password is shown <strong>once</strong>. If the client loses it, reset it from the Client Manager instead of re-inviting.
+          </p>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-2 justify-center mb-3">
+          <button
+            onClick={onCopy}
+            className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-[10px] text-sm font-semibold text-white"
+            style={{ background: "var(--color-teal)", boxShadow: "0 2px 10px rgba(0,184,169,0.25)" }}
+          >
+            <Copy className="w-3.5 h-3.5" />
+            {copied ? "Copied ✓" : "Copy all sign-in details"}
+          </button>
+          <button
+            onClick={() => router.push("/agency/clients")}
+            className="px-5 py-2.5 rounded-[10px] text-sm font-semibold bg-white border border-border text-body hover:border-navy hover:shadow-md transition-all"
           >
             Back to clients
           </button>
           <Link
             href="/agency/clients/invite"
-            className="px-5 py-2.5 rounded-[10px] text-sm font-semibold bg-white border border-border text-body hover:border-navy hover:shadow-md transition-all"
+            className="px-5 py-2.5 rounded-[10px] text-sm font-semibold bg-white border border-border text-body hover:border-navy hover:shadow-md transition-all text-center"
           >
             Invite another
           </Link>
         </div>
 
-        <div className="text-[0.75rem] text-muted mt-6">
+        <div className="text-[0.75rem] text-muted text-center mt-4">
           Client portal URL: <span className="text-teal font-semibold">{portalUrl}</span>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function CredentialLine({ label, value, mono, highlight }) {
+  return (
+    <div className="flex items-start justify-between gap-3 py-1.5 border-b border-border/60 last:border-0">
+      <div className="text-[0.78rem] text-muted font-semibold shrink-0">{label}</div>
+      <div
+        className={`text-[0.85rem] text-right break-all ${mono ? "font-mono" : ""} ${
+          highlight ? "text-teal font-extrabold" : "text-dark"
+        }`}
+      >
+        {value}
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { AgencyTopbar } from "@/components/layout/AgencyTopbar";
 import { DashboardD } from "@/components/dashboard/DashboardD";
+import { DashboardRealtime } from "@/components/dashboard/DashboardRealtime";
 import { DashboardViewSwitcher } from "@/components/dashboard/DashboardViewSwitcher";
 import { OrdersList } from "@/components/orders/OrdersList";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -19,28 +20,39 @@ export default async function DashboardPage({ searchParams }) {
   const agency = ctx.agency;
   const firstName = ctx.profile?.first_name ?? null;
 
-  // Only fetch the orders list when we actually need it for the list view.
+  // Always fetch agency jobs (for both views). This is the tenant-scoped data
+  // the Overview (DashboardD) computes its stats and timeline from, and the
+  // List view renders directly.
   let jobs = [];
-  if (view === "list" && ctx.agencyId) {
-    const { data } = await ctx.supabase
-      .from("jobs")
-      .select(
-        `id, job_number, status, is_rush, total_cost_cents, total_retail_cents, created_at,
-         clients ( id, business_name ),
-         projects ( id, status, cost_price_cents, retail_price_cents, is_rush, due_date,
-                    services ( id, name, icon, slug ) )`
-      )
-      .eq("agency_id", ctx.agencyId)
-      .order("created_at", { ascending: false });
-    jobs = data ?? [];
+  let clientsCount = 0;
+  if (ctx.agencyId) {
+    const [jobsRes, clientsRes] = await Promise.all([
+      ctx.supabase
+        .from("jobs")
+        .select(
+          `id, job_number, status, is_rush, total_cost_cents, total_retail_cents, created_at,
+           clients ( id, business_name ),
+           projects ( id, status, cost_price_cents, retail_price_cents, is_rush, due_date,
+                      services ( id, name, icon, slug ) )`
+        )
+        .eq("agency_id", ctx.agencyId)
+        .order("created_at", { ascending: false }),
+      ctx.supabase
+        .from("clients")
+        .select("id", { count: "exact", head: true })
+        .eq("agency_id", ctx.agencyId),
+    ]);
+    jobs = jobsRes.data ?? [];
+    clientsCount = clientsRes.count ?? 0;
   }
 
   return (
     <>
       <Suspense fallback={<div className="h-topbar bg-white border-b border-border" />}>
-        <AgencyTopbar title="Dashboard" showSwitcher />
+        <AgencyTopbar title="Dashboard" />
       </Suspense>
       <main id="main-content" className="flex-1">
+        <DashboardRealtime agencyId={ctx.agencyId} />
         <div className="px-4 sm:px-6 lg:px-8 pt-5 lg:pt-6">
           <DashboardViewSwitcher current={view} />
         </div>
@@ -57,7 +69,7 @@ export default async function DashboardPage({ searchParams }) {
             )}
           </div>
         ) : (
-          <DashboardD agency={agency} firstName={firstName} />
+          <DashboardD agency={agency} firstName={firstName} jobs={jobs} clientsCount={clientsCount} />
         )}
       </main>
     </>

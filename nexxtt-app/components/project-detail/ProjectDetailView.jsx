@@ -8,6 +8,7 @@ import { ProjectStages, progressPct } from "./ProjectStages";
 import { DisputePanel } from "./DisputePanel";
 import { ClientActionPanel } from "./ClientActionPanel";
 import { DeliverablesPanel } from "./DeliverablesPanel";
+import { StartWorkPanel } from "./StartWorkPanel";
 
 /**
  * Shared detail view for a single project.
@@ -21,6 +22,8 @@ import { DeliverablesPanel } from "./DeliverablesPanel";
 export function ProjectDetailView({
   viewer, project, service, brief, files, job, backHref, backLabel,
   viewerIsAdmin = false,
+  tabsSlot = null,
+  revisionNote = null, // { note, requestedAt, requesterId } — shown when status=revision_requested
 }) {
   const pct = progressPct(service?.slug, project.status);
   const profit = (project.retail_price_cents ?? 0) - (project.cost_price_cents ?? 0);
@@ -29,6 +32,10 @@ export function ProjectDetailView({
   const canClientAct =
     (viewer === "agency_client" || viewer === "direct_client") &&
     project.status === "in_review";
+  // Agency/admin can mark a brief_pending project as in_progress.
+  const canStartWork =
+    (viewer === "agency" || viewerIsAdmin) &&
+    project.status === "brief_pending";
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-5 lg:py-7 pb-20 lg:pb-8 max-w-[1100px] mx-auto w-full">
@@ -39,6 +46,8 @@ export function ProjectDetailView({
         <ArrowLeft className="w-3.5 h-3.5" />
         {backLabel}
       </Link>
+
+      {tabsSlot}
 
       {/* Hero */}
       <div
@@ -143,6 +152,26 @@ export function ProjectDetailView({
         viewerIsAdmin={viewerIsAdmin}
       />
 
+      {project.status === "revision_requested" && revisionNote?.note && (
+        <RevisionNoteBanner
+          note={revisionNote.note}
+          requestedAt={revisionNote.requestedAt}
+          revisionCount={project.revision_count ?? 1}
+          canReply={viewer === "agency" && !viewerIsAdmin}
+          projectId={project.id}
+          viewerIsAdmin={viewerIsAdmin}
+        />
+      )}
+
+      {/* Agency/admin: kick off work */}
+      {canStartWork && (
+        <StartWorkPanel
+          projectId={project.id}
+          defaultStartDate={project.start_date ?? null}
+          defaultDueDate={project.due_date ?? null}
+        />
+      )}
+
       {/* Client actions — real wiring, client_client or direct_client only */}
       {canClientAct && <ClientActionPanel projectId={project.id} />}
 
@@ -242,6 +271,72 @@ function stringify(v) {
   if (Array.isArray(v)) return v.join(", ");
   if (typeof v === "object") return JSON.stringify(v, null, 2);
   return String(v);
+}
+
+function RevisionNoteBanner({ note, requestedAt, revisionCount, canReply, projectId, viewerIsAdmin }) {
+  const when = requestedAt
+    ? new Date(requestedAt).toLocaleString("en-AU", {
+        day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
+      })
+    : "—";
+  const chatHref = viewerIsAdmin
+    ? `/admin/projects/${projectId}?tab=chat`
+    : `/agency/projects/${projectId}?tab=chat`;
+
+  return (
+    <section
+      className="rounded-[16px] p-4 mb-4"
+      style={{
+        background: "rgba(59,130,246,0.06)",
+        border: "1px solid rgba(59,130,246,0.25)",
+        borderLeft: "4px solid var(--color-blue, #3b82f6)",
+      }}
+    >
+      <div className="flex items-start gap-3">
+        <div
+          className="w-8 h-8 rounded-[10px] flex items-center justify-center shrink-0 mt-0.5"
+          style={{ background: "rgba(59,130,246,0.12)", color: "var(--color-blue, #3b82f6)" }}
+        >
+          ↻
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="font-display font-extrabold text-dark text-[0.95rem]">
+              Revision requested
+            </div>
+            <span
+              className="inline-flex items-center px-2 py-[2px] rounded-full text-[0.65rem] font-bold"
+              style={{
+                background: "rgba(59,130,246,0.12)",
+                color: "var(--color-blue, #3b82f6)",
+                border: "1px solid rgba(59,130,246,0.25)",
+              }}
+            >
+              #{revisionCount}
+            </span>
+            <span className="text-[0.72rem] text-muted">{when}</span>
+          </div>
+          <p className="mt-2 text-[0.88rem] text-body whitespace-pre-wrap leading-relaxed">
+            {note}
+          </p>
+          <div className="mt-3 flex items-center gap-2 flex-wrap">
+            <Link
+              href={chatHref}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[0.78rem] font-semibold text-white"
+              style={{ background: "var(--color-blue, #3b82f6)" }}
+            >
+              💬 {canReply ? "Reply in chat" : "Open discussion"}
+            </Link>
+            {viewerIsAdmin && (
+              <span className="text-[0.72rem] text-muted">
+                You're an observer here — the agency replies to the client.
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
 }
 
 function ActivityItem({ color, title, time }) {

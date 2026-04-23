@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { OrderDrawer } from "@/components/admin/OrderDrawer";
 
 const PAST_STATUSES = new Set(["delivered"]);
 
@@ -14,6 +14,7 @@ export function ClientProjectList({ jobs, basePath }) {
     const first = jobs.find((j) => !PAST_STATUSES.has(j.status));
     return new Set(first ? [first.id] : []);
   });
+  const [active, setActive] = useState(null); // { projectId, label }
 
   const { current, past } = useMemo(() => {
     const current = [];
@@ -68,7 +69,7 @@ export function ClientProjectList({ jobs, basePath }) {
           Nothing {tab === "current" ? "active" : "completed"} yet.
         </div>
       ) : (
-        <div className="flex flex-col gap-2.5">
+        <div className="flex flex-col gap-1.5">
           {list.map((j) => (
             <JobCard
               key={j.id}
@@ -83,10 +84,25 @@ export function ClientProjectList({ jobs, basePath }) {
                   return n;
                 })
               }
+              onOpenProject={(project) =>
+                setActive({
+                  projectId: project.id,
+                  label: `${j.job_number} · ${project.services?.name ?? "Project"}`,
+                })
+              }
             />
           ))}
         </div>
       )}
+
+      <OrderDrawer
+        open={!!active}
+        src={active?.projectId && basePath ? `${basePath}/projects/${active.projectId}?embed=1` : null}
+        openHref={active?.projectId && basePath ? `${basePath}/projects/${active.projectId}` : null}
+        title={active?.label ?? null}
+        subtitle="Project"
+        onClose={() => setActive(null)}
+      />
     </div>
   );
 }
@@ -115,7 +131,7 @@ function Tab({ label, active, onClick }) {
   );
 }
 
-function JobCard({ job, basePath, expanded, onToggle }) {
+function JobCard({ job, basePath, expanded, onToggle, onOpenProject }) {
   const created = new Date(job.created_at).toLocaleDateString("en-AU", {
     day: "2-digit",
     month: "short",
@@ -136,7 +152,7 @@ function JobCard({ job, basePath, expanded, onToggle }) {
     >
       <button
         onClick={onToggle}
-        className="w-full flex items-center gap-4 px-5 py-4 text-left transition-colors"
+        className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors"
         style={{
           background: expanded ? "var(--wl-primary)" : "transparent",
           color: expanded ? "white" : undefined,
@@ -206,7 +222,7 @@ function JobCard({ job, basePath, expanded, onToggle }) {
               key={p.id}
               project={p}
               isLast={i === (job.projects?.length ?? 0) - 1}
-              basePath={basePath}
+              onOpen={() => onOpenProject(p)}
             />
           ))}
         </div>
@@ -215,7 +231,7 @@ function JobCard({ job, basePath, expanded, onToggle }) {
   );
 }
 
-function ProjectRow({ project, isLast, basePath }) {
+function ProjectRow({ project, isLast, onOpen }) {
   const due = project.due_date
     ? new Date(project.due_date).toLocaleDateString("en-AU", {
         day: "2-digit",
@@ -223,15 +239,18 @@ function ProjectRow({ project, isLast, basePath }) {
       })
     : "—";
   const needsAction = project.status === "in_review";
-  const href = basePath ? `${basePath}/projects/${project.id}` : null;
-  const Tag = href ? Link : "div";
-  const tagProps = href ? { href } : {};
   return (
-    <Tag
-      {...tagProps}
-      className={`flex items-center gap-3 py-3 px-4 lg:px-5 pl-[60px] transition-colors hover:bg-off/60 ${
+    <div
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); }
+      }}
+      tabIndex={0}
+      role="button"
+      aria-label={`Open project ${project.services?.name ?? ""}`}
+      className={`flex items-center gap-2.5 py-1.5 px-3 lg:px-4 pl-13 transition-colors hover:bg-off/60 cursor-pointer ${
         isLast ? "" : "border-b border-border"
-      } ${href ? "cursor-pointer" : ""}`}
+      }`}
     >
       <div
         className="w-2 h-2 rounded-full shrink-0"
@@ -274,6 +293,6 @@ function ProjectRow({ project, isLast, basePath }) {
           {needsAction ? "Review →" : "View →"}
         </button>
       </div>
-    </Tag>
+    </div>
   );
 }

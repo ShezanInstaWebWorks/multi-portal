@@ -6,14 +6,20 @@ import {
  * White-label agency-client invite. `brand` drives the colours + display name
  * so the email feels like it came from the agency, not nexxtt.io.
  *
+ * The client signs in directly with the email + temporary password we issued
+ * on invite. No magic-link / setup flow.
+ *
  * Props:
  *   brand: { display_name, primary_colour, accent_colour }
- *   contactName, contactEmail, subject, message, cta, signOff
- *   actionLink — magic link URL
- *   portalUrl  — pretty URL shown under the button
+ *   contactName, subject, message, cta, signOff
+ *   loginEmail    — email the client uses to sign in (matches their address)
+ *   tempPassword  — temporary password generated server-side on invite
+ *   loginUrl      — absolute URL to /login?next=... for the CTA button
+ *   portalUrl     — pretty URL shown as "your portal"
  */
 export function ClientInviteEmail({
-  brand, contactName, subject, message, cta, signOff, actionLink, portalUrl,
+  brand, contactName, subject, message, cta, signOff,
+  loginEmail, tempPassword, loginUrl, portalUrl,
 }) {
   const primary = brand?.primary_colour ?? "#0B1F3A";
   const accent  = brand?.accent_colour  ?? "#00B8A9";
@@ -41,9 +47,39 @@ export function ClientInviteEmail({
                 {message}
               </Text>
 
-              <Section style={{ textAlign: "center", margin: "28px 0" }}>
+              {/* Credentials block */}
+              <Section
+                style={{
+                  margin: "24px 0 8px 0",
+                  background: "#f7f8fa",
+                  border: "1px solid #E2E6ED",
+                  borderRadius: 10,
+                  padding: "16px 18px",
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 800,
+                    color: "#6B7A92",
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    margin: "0 0 10px 0",
+                  }}
+                >
+                  Your sign-in details
+                </Text>
+                <CredentialRow label="Login URL" value={portalUrl} />
+                <CredentialRow label="Email" value={loginEmail} monospace />
+                <CredentialRow label="Temporary password" value={tempPassword} monospace accent={accent} />
+                <Text style={{ fontSize: 12, color: "#6B7A92", margin: "10px 0 0 0", lineHeight: 1.6 }}>
+                  You can change your password after signing in.
+                </Text>
+              </Section>
+
+              <Section style={{ textAlign: "center", margin: "20px 0 10px 0" }}>
                 <Link
-                  href={actionLink ?? portalUrl}
+                  href={loginUrl ?? portalUrl}
                   style={{
                     background: primary,
                     color: "white",
@@ -55,7 +91,7 @@ export function ClientInviteEmail({
                     display: "inline-block",
                   }}
                 >
-                  {cta ?? "Set up my portal →"}
+                  {cta ?? "Sign In →"}
                 </Link>
               </Section>
 
@@ -72,7 +108,7 @@ export function ClientInviteEmail({
                 }}
               >
                 <Text style={{ fontSize: 12, color: accent, margin: 0, wordBreak: "break-all" }}>
-                  {portalUrl}
+                  {loginUrl ?? portalUrl}
                 </Text>
               </Section>
 
@@ -88,12 +124,35 @@ export function ClientInviteEmail({
               <Text style={{ fontSize: 11, color: "#6B7A92", textAlign: "center", margin: 0, lineHeight: 1.6 }}>
                 This invitation was sent by {displayName}.<br />
                 Questions? Reply to this email.<br />
-                This link expires in 7 days.
+                Keep your temporary password private — it lets anyone sign in as you.
               </Text>
             </Section>
           </Container>
         </Body>
       </Tailwind>
     </Html>
+  );
+}
+
+function CredentialRow({ label, value, monospace, accent }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: "4px 0" }}>
+      <Text style={{ fontSize: 12, color: "#6B7A92", margin: 0, whiteSpace: "nowrap" }}>
+        {label}
+      </Text>
+      <Text
+        style={{
+          fontSize: 13,
+          color: accent ?? "#0B1F3A",
+          margin: 0,
+          fontWeight: accent ? 800 : 600,
+          fontFamily: monospace ? "Menlo, Consolas, monospace" : undefined,
+          wordBreak: "break-all",
+          textAlign: "right",
+        }}
+      >
+        {value}
+      </Text>
+    </div>
   );
 }

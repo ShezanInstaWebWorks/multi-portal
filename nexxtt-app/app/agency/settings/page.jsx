@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { AgencyTopbar } from "@/components/layout/AgencyTopbar";
 import { BrandSettingsForm } from "@/components/settings/BrandSettingsForm";
+import { PasswordChangeCard } from "@/components/settings/PasswordChangeCard";
 import { resolveAgencyContext } from "@/lib/impersonation";
 
 export const metadata = {
@@ -64,6 +65,13 @@ export default async function SettingsPage() {
           within a minute.
         </p>
         <BrandSettingsForm agency={agency} brand={brand ?? {}} />
+
+        <div className="mt-8">
+          <h2 className="font-display text-[1.1rem] font-extrabold text-dark mb-3">
+            Account
+          </h2>
+          <PasswordChangeCard email={ctx.user.email} />
+        </div>
       </main>
     </>
   );

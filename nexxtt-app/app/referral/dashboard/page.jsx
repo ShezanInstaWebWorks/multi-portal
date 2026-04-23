@@ -79,8 +79,9 @@ export default async function ReferralDashboardPage() {
     );
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-  const referralUrl = `${appUrl.replace(/^https?:\/\//, "")}/ref/${partner.referral_code.toLowerCase()}`;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3210";
+  // Full URL with protocol so the Copy Link button produces a clickable link.
+  const referralUrl = `${appUrl.replace(/\/$/, "")}/ref/${partner.referral_code.toLowerCase()}`;
 
   return (
     <>

@@ -2,23 +2,35 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { ChevronRight, Plus, Search } from "lucide-react";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { formatCents } from "@/lib/money";
+import { OrderDrawer } from "@/components/admin/OrderDrawer";
+
+// Each filter matches if the job itself OR any of its projects has a status
+// in the given set. A job with one disputed project should appear under
+// "Disputed" even if the parent job's overall status is still "brief_pending".
+function jobOrAnyProject(statuses) {
+  const set = new Set(statuses);
+  return (j) => {
+    if (set.has(j.status)) return true;
+    return (j.projects ?? []).some((p) => set.has(p.status));
+  };
+}
 
 const FILTERS = [
   { key: "all",       label: "All Orders" },
-  { key: "active",    label: "Active",    match: (j) => ["brief_pending", "in_progress"].includes(j.status) },
-  { key: "review",    label: "In Review", match: (j) => j.status === "in_review" },
-  { key: "delivered", label: "Delivered", match: (j) => j.status === "delivered" },
-  { key: "disputed",  label: "Disputed",  match: (j) => j.status === "disputed" },
+  { key: "active",    label: "Active",    match: jobOrAnyProject(["brief_pending", "in_progress", "revision_requested"]) },
+  { key: "review",    label: "In Review", match: jobOrAnyProject(["in_review"]) },
+  { key: "delivered", label: "Delivered", match: jobOrAnyProject(["delivered"]) },
+  { key: "disputed",  label: "Disputed",  match: jobOrAnyProject(["disputed"]) },
 ];
 
 export function OrdersList({ jobs }) {
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState("");
   const [expanded, setExpanded] = useState(() => new Set([jobs[0]?.id]));
+  const [active, setActive] = useState(null); // { projectId, label }
 
   const counts = useMemo(() => {
     const c = { all: jobs.length };
@@ -107,7 +119,7 @@ export function OrdersList({ jobs }) {
       </div>
 
       {/* Order cards */}
-      <div className="flex flex-col gap-2.5">
+      <div className="flex flex-col gap-1.5">
         {filtered.length === 0 && (
           <div className="text-center py-10 text-sm text-muted">
             No orders match the current filter.
@@ -126,6 +138,12 @@ export function OrdersList({ jobs }) {
                 return next;
               })
             }
+            onOpenProject={(project) =>
+              setActive({
+                projectId: project.id,
+                label: `${j.job_number} · ${project.services?.name ?? "Project"}`,
+              })
+            }
           />
         ))}
       </div>
@@ -135,11 +153,20 @@ export function OrdersList({ jobs }) {
         <span>Sell = your price to client</span>
         <span className="text-green font-semibold">Profit = yours to keep</span>
       </div>
+
+      <OrderDrawer
+        open={!!active}
+        src={active?.projectId ? `/agency/projects/${active.projectId}?embed=1` : null}
+        openHref={active?.projectId ? `/agency/projects/${active.projectId}` : null}
+        title={active?.label ?? null}
+        subtitle="Project"
+        onClose={() => setActive(null)}
+      />
     </div>
   );
 }
 
-function OrderCard({ job, expanded, onToggle }) {
+function OrderCard({ job, expanded, onToggle, onOpenProject }) {
   const profit = job.total_retail_cents - job.total_cost_cents;
   const marginPct = job.total_retail_cents > 0
     ? Math.round((profit / job.total_retail_cents) * 100)
@@ -156,7 +183,7 @@ function OrderCard({ job, expanded, onToggle }) {
       {/* Head */}
       <button
         onClick={onToggle}
-        className="w-full flex items-center gap-3 text-left px-4 lg:px-5 py-4 hover:bg-off transition-colors"
+        className="w-full flex items-center gap-2.5 text-left px-3 lg:px-4 py-2.5 hover:bg-off transition-colors"
       >
         <ChevronRight
           className="w-4 h-4 text-muted shrink-0 transition-transform duration-200"
@@ -235,7 +262,7 @@ function OrderCard({ job, expanded, onToggle }) {
       {expanded && (job.projects?.length ?? 0) > 0 && (
         <div className="border-t border-border bg-off/40">
           {job.projects.map((p) => (
-            <ProjectRow key={p.id} jobId={job.id} project={p} />
+            <ProjectRow key={p.id} project={p} onOpen={() => onOpenProject(p)} />
           ))}
         </div>
       )}
@@ -243,8 +270,7 @@ function OrderCard({ job, expanded, onToggle }) {
   );
 }
 
-function ProjectRow({ jobId, project }) {
-  const router = useRouter();
+function ProjectRow({ project, onOpen }) {
   const profit = project.retail_price_cents - project.cost_price_cents;
   const dotColor = {
     brief_pending:      "var(--color-navy)",
@@ -257,8 +283,13 @@ function ProjectRow({ jobId, project }) {
 
   return (
     <div
-      onClick={() => router.push(`/agency/orders/${jobId}`)}
-      className="flex items-center gap-3 px-4 lg:px-5 py-3 cursor-pointer border-b border-border last:border-0 hover:bg-teal-pale transition-colors"
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); }
+      }}
+      tabIndex={0}
+      role="button"
+      className="flex items-center gap-2.5 px-3 lg:px-4 py-1.5 cursor-pointer border-b border-border last:border-0 hover:bg-teal-pale transition-colors"
     >
       <div
         className="w-2 h-2 rounded-full shrink-0 ml-5"

@@ -1,97 +1,187 @@
 "use client";
 
+import Link from "next/link";
 import { tierFor, tierProgress } from "@/lib/priority";
+import { formatCents } from "@/lib/money";
+import { StatusBadge } from "@/components/shared/StatusBadge";
+import { EmptyState } from "@/components/shared/EmptyState";
 
-// Wireframe s04d — command-center: 4 stat boxes, gantt timeline, activity +
-// dark earnings chart. Agency shell sidebar stays visible; the wireframe's
-// "wide command sidebar" profile card is rendered inline at the top as a
-// welcome strip with a real Priority Unlock progress bar driven by
-// agency.total_jobs_count.
+// Wireframe s04d — command-center: 4 stat boxes, active-orders timeline,
+// activity feed + earnings chart. Now wired to live, tenant-scoped data.
 
-const STATS = [
-  { label: "ACTIVE",      value: "3",     pill: "+1",         pillCls: "bg-teal/10 text-teal border border-teal/20",         border: "var(--color-teal)"  },
-  { label: "REVENUE APR", value: "$6,800", pill: "↑18%",       pillCls: "bg-green/10 text-green border border-green/20",     border: "#3b82f6"            },
-  { label: "PROFIT APR",  value: "$4,200", pill: "42% margin", pillCls: "bg-green/10 text-green border border-green/20",     border: "var(--color-green)" },
-  { label: "CLIENTS",     value: "4",     pill: "2 portal",   pillCls: "bg-amber/10 text-amber border border-amber/20",     border: "var(--color-amber)" },
-];
+const ACTIVE_PROJECT_STATUSES = new Set([
+  "brief_pending",
+  "in_progress",
+  "in_review",
+  "revision_requested",
+]);
 
-const GANTT_ROWS = [
-  {
-    title: "Website Design",
-    client: "Coastal Realty",
-    status: "IN PROGRESS",
-    barStyle: {
-      left: "14%",
-      width: "38%",
-      background: "linear-gradient(90deg,#1e40af,#3b82f6)",
-      color: "white",
-    },
-    profit: "$480",
-  },
-  {
-    title: "Logo Design",
-    client: "TechCore SaaS",
-    status: "IN REVIEW",
-    barStyle: {
-      left: "20%",
-      width: "14%",
-      background: "linear-gradient(90deg,#b45309,#f59e0b)",
-      color: "var(--color-dark)",
-    },
-    profit: "$220",
-  },
-  {
-    title: "Brand Guidelines",
-    client: "Bloom Beauty",
-    status: "DELIVERED",
-    barStyle: {
-      left: "7%",
-      width: "48%",
-      background: "linear-gradient(90deg,#059669,#10b981)",
-      color: "white",
-    },
-    profit: "$380",
-  },
-  {
-    title: "SEO Refresh",
-    client: "Maple Clinics",
-    status: "INTAKE",
-    barStyle: {
-      left: "72%",
-      width: "16%",
-      background: "transparent",
-      border: "2px dashed rgba(124,58,237,0.4)",
-      color: "var(--color-adm)",
-    },
-    profit: null,
-  },
-];
+function monthKey(d) {
+  const dt = new Date(d);
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`;
+}
 
-const DATES = [
-  "Apr 8", "Apr 9", "Apr 10", "Apr 11", "Apr 12", "Apr 13", "Apr 14",
-  "Apr 15", "Apr 16", "Apr 17", "Apr 18", "Apr 19", "TODAY", "Apr 21",
-];
+function computeStats(jobs, clientsCount) {
+  const now = new Date();
+  const thisMonth = monthKey(now);
+  const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const prevMonth = monthKey(prevMonthDate);
 
-const ACTIVITY = [
-  { tag: "DELIVERY",  tagCls: "bg-green/10 text-green border-green/30",  title: "Logo Design delivered to Solo Advisory", sub: "$220 profit confirmed", time: "2d ago" },
-  { tag: "NEW ORDER", tagCls: "bg-blue/10  text-blue  border-blue/30",   title: "Brand Guidelines · Bloom Beauty",         sub: "$380",                  time: "4d ago" },
-  { tag: "FINANCE",   tagCls: "bg-amber/10 text-amber border-amber/30", title: "Prepaid balance top-up",                  sub: "$4,000 · 10% off · valid 6 months", time: "1w ago" },
-];
+  let activeProjects = 0;
+  let activeThisMonthStarted = 0;
+  let revenueThisMonth = 0;
+  let revenuePrevMonth = 0;
+  let costThisMonth = 0;
+  let profitThisMonth = 0;
 
-export function DashboardD({ agency, firstName }) {
-  const jobsCount = agency?.total_jobs_count ?? 0;
+  for (const j of jobs) {
+    const mk = monthKey(j.created_at);
+    const isThis = mk === thisMonth;
+    const isPrev = mk === prevMonth;
+    if (isThis) {
+      revenueThisMonth += j.total_retail_cents ?? 0;
+      costThisMonth += j.total_cost_cents ?? 0;
+      profitThisMonth += (j.total_retail_cents ?? 0) - (j.total_cost_cents ?? 0);
+      if ((j.projects ?? []).length > 0) activeThisMonthStarted += 1;
+    }
+    if (isPrev) revenuePrevMonth += j.total_retail_cents ?? 0;
+
+    for (const p of j.projects ?? []) {
+      if (ACTIVE_PROJECT_STATUSES.has(p.status)) activeProjects += 1;
+    }
+  }
+
+  const revenueDelta =
+    revenuePrevMonth > 0
+      ? Math.round(((revenueThisMonth - revenuePrevMonth) / revenuePrevMonth) * 100)
+      : null;
+  const margin =
+    revenueThisMonth > 0
+      ? Math.round((profitThisMonth / revenueThisMonth) * 100)
+      : null;
+
+  return {
+    activeProjects,
+    activeThisMonthStarted,
+    revenueThisMonth,
+    profitThisMonth,
+    revenueDelta,
+    margin,
+    clientsCount,
+  };
+}
+
+function statusBarStyle(status) {
+  if (status === "in_progress" || status === "brief_pending") {
+    return { background: "linear-gradient(90deg,#1e40af,#3b82f6)", color: "white" };
+  }
+  if (status === "in_review" || status === "revision_requested") {
+    return { background: "linear-gradient(90deg,#b45309,#f59e0b)", color: "var(--color-dark)" };
+  }
+  if (status === "delivered" || status === "approved") {
+    return { background: "linear-gradient(90deg,#059669,#10b981)", color: "white" };
+  }
+  if (status === "disputed") {
+    return { background: "linear-gradient(90deg,#991b1b,#ef4444)", color: "white" };
+  }
+  return { background: "rgba(124,58,237,0.15)", color: "var(--color-adm)", border: "2px dashed rgba(124,58,237,0.4)" };
+}
+
+// Flatten jobs → projects for the timeline, filter to active ones, cap to 6.
+function buildTimelineRows(jobs) {
+  const rows = [];
+  for (const j of jobs) {
+    const clientName = j.clients?.business_name ?? "—";
+    for (const p of j.projects ?? []) {
+      if (!ACTIVE_PROJECT_STATUSES.has(p.status)) continue;
+      rows.push({
+        id: p.id,
+        title: p.services?.name ?? "Project",
+        icon: p.services?.icon ?? "•",
+        client: clientName,
+        status: p.status,
+        due: p.due_date,
+        profit: (p.retail_price_cents ?? 0) - (p.cost_price_cents ?? 0),
+      });
+    }
+  }
+  return rows.slice(0, 6);
+}
+
+function buildActivity(jobs) {
+  const items = [];
+  for (const j of jobs) {
+    items.push({
+      tag: "NEW ORDER",
+      tagCls: "bg-blue/10 text-blue border-blue/30",
+      title: `Order ${j.job_number} · ${j.clients?.business_name ?? "—"}`,
+      sub: `${(j.projects ?? []).length} project${(j.projects ?? []).length === 1 ? "" : "s"} · ${formatCents(j.total_retail_cents)}`,
+      time: new Date(j.created_at).toLocaleDateString("en-AU", { day: "2-digit", month: "short" }),
+    });
+    for (const p of j.projects ?? []) {
+      if (p.status === "delivered") {
+        items.push({
+          tag: "DELIVERY",
+          tagCls: "bg-green/10 text-green border-green/30",
+          title: `${p.services?.name ?? "Project"} delivered`,
+          sub: `${j.clients?.business_name ?? "—"} · Order ${j.job_number}`,
+          time: p.due_date ? new Date(p.due_date).toLocaleDateString("en-AU", { day: "2-digit", month: "short" }) : "—",
+        });
+      }
+    }
+  }
+  return items.slice(0, 6);
+}
+
+export function DashboardD({ agency, firstName, jobs = [], clientsCount = 0 }) {
+  const stats = computeStats(jobs, clientsCount);
+  const timelineRows = buildTimelineRows(jobs);
+  const activity = buildActivity(jobs);
+
+  const jobsCount = agency?.total_jobs_count ?? jobs.length;
   const { current, next } = tierFor(jobsCount);
   const { pct, toGo } = tierProgress(jobsCount);
-  const initials = firstName ? firstName[0]?.toUpperCase() + (agency?.name?.[0]?.toUpperCase() ?? "") : "·";
+  const initials = firstName
+    ? firstName[0]?.toUpperCase() + (agency?.name?.[0]?.toUpperCase() ?? "")
+    : "·";
+
+  const STATS = [
+    {
+      label: "ACTIVE",
+      value: String(stats.activeProjects),
+      pill: stats.activeThisMonthStarted > 0 ? `+${stats.activeThisMonthStarted} this mo` : "none yet",
+      pillCls: "bg-teal/10 text-teal border border-teal/20",
+      border: "var(--color-teal)",
+    },
+    {
+      label: "REVENUE · MTD",
+      value: formatCents(stats.revenueThisMonth),
+      pill: stats.revenueDelta == null ? "—" : `${stats.revenueDelta >= 0 ? "↑" : "↓"}${Math.abs(stats.revenueDelta)}%`,
+      pillCls: "bg-green/10 text-green border border-green/20",
+      border: "#3b82f6",
+    },
+    {
+      label: "PROFIT · MTD",
+      value: formatCents(stats.profitThisMonth),
+      pill: stats.margin == null ? "—" : `${stats.margin}% margin`,
+      pillCls: "bg-green/10 text-green border border-green/20",
+      border: "var(--color-green)",
+    },
+    {
+      label: "CLIENTS",
+      value: String(stats.clientsCount),
+      pill: stats.clientsCount === 0 ? "invite your first" : `${stats.clientsCount} total`,
+      pillCls: "bg-amber/10 text-amber border border-amber/20",
+      border: "var(--color-amber)",
+    },
+  ];
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-5 lg:py-6 pb-20 lg:pb-8">
+    <div className="px-3 sm:px-6 lg:px-8 py-4 sm:py-5 lg:py-6 pb-20 lg:pb-8">
       {/* Welcome strip with Priority Unlock */}
       <div
-        className="rounded-[12px] p-4 mb-5 border border-border shadow-sm"
-        style={{
-          background: "linear-gradient(135deg, var(--color-off), white)",
-        }}
+        className="rounded-[12px] p-3 sm:p-4 mb-4 sm:mb-5 border border-border shadow-sm"
+        style={{ background: "linear-gradient(135deg, var(--color-off), white)" }}
       >
         <div className="flex items-center gap-3 flex-wrap">
           <div
@@ -104,7 +194,7 @@ export function DashboardD({ agency, firstName }) {
             {initials}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-[0.88rem] font-bold text-dark">
+            <div className="text-[0.88rem] font-bold text-dark truncate">
               {firstName ?? "Agency"} {agency?.name ? `· ${agency.name}` : ""}
             </div>
             <div
@@ -114,7 +204,7 @@ export function DashboardD({ agency, firstName }) {
               AGENCY PARTNER · {current.label.toUpperCase()}
             </div>
           </div>
-          <div className="flex-1 min-w-[180px] max-w-[280px]">
+          <div className="basis-full sm:basis-auto sm:flex-1 sm:min-w-[180px] sm:max-w-[280px]">
             <div
               className="text-[0.65rem] font-bold uppercase text-muted flex justify-between mb-1.5"
               style={{ letterSpacing: "0.1em" }}
@@ -155,27 +245,27 @@ export function DashboardD({ agency, firstName }) {
       </div>
 
       {/* 4 stat boxes */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 mb-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5 mb-4 sm:mb-5">
         {STATS.map((s) => (
           <div
             key={s.label}
-            className="relative bg-white border border-border rounded-[10px] px-5 py-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all overflow-hidden"
+            className="relative bg-white border border-border rounded-[10px] px-3.5 sm:px-5 py-3 sm:py-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all overflow-hidden min-w-0"
           >
             <div
               className="absolute left-0 top-0 bottom-0 w-[3px]"
               style={{ background: s.border }}
             />
             <div
-              className="text-[0.65rem] uppercase text-muted font-bold mb-1"
-              style={{ letterSpacing: "0.1em" }}
+              className="text-[0.62rem] sm:text-[0.65rem] uppercase text-muted font-bold mb-1 truncate"
+              style={{ letterSpacing: "0.08em" }}
             >
               {s.label}
             </div>
-            <div className="font-display text-[2rem] font-extrabold text-dark leading-none">
+            <div className="font-display text-[1.35rem] sm:text-[1.8rem] font-extrabold text-dark leading-none truncate">
               {s.value}
             </div>
             <span
-              className={`inline-block mt-1.5 rounded-full px-2 py-[1px] text-[0.62rem] font-bold ${s.pillCls}`}
+              className={`inline-block mt-1.5 rounded-full px-2 py-[1px] text-[0.6rem] sm:text-[0.62rem] font-bold ${s.pillCls} max-w-full truncate`}
             >
               {s.pill}
             </span>
@@ -183,220 +273,155 @@ export function DashboardD({ agency, firstName }) {
         ))}
       </div>
 
-      {/* Gantt timeline */}
+      {/* Active orders timeline — live data */}
       <section className="mb-5">
         <div className="flex items-center justify-between gap-3 flex-wrap mb-2.5">
           <h2 className="font-display text-[1.2rem] font-extrabold text-dark">
-            Active orders · timeline
+            Active orders
           </h2>
-          <div className="flex gap-1.5">
-            <LegendPill color="var(--color-teal)"  label="in progress" />
-            <LegendPill color="var(--color-amber)" label="in review" />
-            <LegendPill color="var(--color-green)" label="delivered" />
-          </div>
+          {jobs.length > 0 && (
+            <Link
+              href="/agency/dashboard?view=list"
+              className="text-[0.78rem] font-semibold text-teal hover:underline"
+            >
+              View all →
+            </Link>
+          )}
         </div>
 
-        <div className="overflow-x-auto bg-white border border-border rounded-[16px] shadow-sm">
-          <div className="min-w-[720px]">
-            {/* Date header */}
-            <div
-              className="flex items-center border-b-2 border-border h-9 bg-off"
-              style={{ paddingLeft: "220px" }}
-            >
-              {DATES.map((d) => (
-                <div
-                  key={d}
-                  className="flex-1 text-center text-[0.65rem] font-bold whitespace-nowrap"
-                  style={{
-                    letterSpacing: "0.06em",
-                    color: d === "TODAY" ? "var(--color-red)" : "var(--color-muted)",
-                    fontWeight: d === "TODAY" ? 800 : 700,
-                  }}
+        <div className="bg-white border border-border rounded-[16px] shadow-sm overflow-hidden">
+          {timelineRows.length === 0 ? (
+            <div className="p-6">
+              <EmptyState
+                icon="📋"
+                title="No active orders"
+                description={
+                  jobs.length === 0
+                    ? "You haven't placed an order yet. Invite your first client or place an order on their behalf to get started."
+                    : "All your current orders are delivered or awaiting client approval. Place a new order to kick off the next brief."
+                }
+                action={
+                  <Link
+                    href="/agency/orders/new"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-[10px] text-sm font-semibold text-white"
+                    style={{
+                      background: "var(--color-teal)",
+                      boxShadow: "0 2px 10px rgba(0,184,169,0.25)",
+                    }}
+                  >
+                    + New order
+                  </Link>
+                }
+              />
+            </div>
+          ) : (
+            <div className="divide-y divide-border">
+              {timelineRows.map((row) => (
+                <Link
+                  key={row.id}
+                  href={`/agency/projects/${row.id}`}
+                  className="flex items-center gap-2.5 sm:gap-3 px-3.5 sm:px-5 py-3 sm:py-3.5 hover:bg-off transition-colors"
                 >
-                  {d}
-                </div>
+                  <div
+                    className="w-9 h-9 rounded-[10px] flex items-center justify-center text-[1.05rem] shrink-0"
+                    style={{
+                      background: "var(--color-teal-pale)",
+                      color: "var(--color-teal)",
+                    }}
+                  >
+                    {row.icon}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[0.85rem] sm:text-[0.88rem] font-bold text-dark truncate">
+                      {row.title}
+                    </div>
+                    <div className="text-[0.7rem] sm:text-[0.72rem] text-muted truncate">
+                      {row.client} · Due {row.due ?? "—"}
+                    </div>
+                  </div>
+                  <div className="shrink-0">
+                    <StatusBadge status={row.status} />
+                  </div>
+                  <div className="font-display font-extrabold text-green text-[0.95rem] w-20 text-right hidden md:block shrink-0">
+                    {formatCents(row.profit)}
+                  </div>
+                </Link>
               ))}
             </div>
-
-            {/* Rows */}
-            {GANTT_ROWS.map((row, i) => (
-              <div
-                key={i}
-                className="flex items-center h-[52px]"
-                style={{
-                  borderBottom:
-                    i < GANTT_ROWS.length - 1 ? "1px solid var(--color-border)" : "none",
-                }}
-              >
-                <div
-                  className="w-[220px] shrink-0 px-4 border-r border-border"
-                >
-                  <div className="text-[0.85rem] font-bold text-dark">
-                    {row.title}
-                  </div>
-                  <div className="text-[0.72rem] text-muted">{row.client}</div>
-                </div>
-                <div className="flex-1 relative h-[52px]">
-                  <div
-                    className="absolute h-[26px] top-[13px] rounded-full flex items-center justify-center text-[0.68rem] font-extrabold px-3 whitespace-nowrap"
-                    style={{
-                      ...row.barStyle,
-                      letterSpacing: "0.04em",
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                    }}
-                  >
-                    {row.status}
-                  </div>
-                  {/* Today line */}
-                  <div
-                    className="absolute top-0 bottom-0 w-[2px]"
-                    style={{
-                      left: "87%",
-                      background: "var(--color-red)",
-                      boxShadow: "0 0 8px rgba(239,68,68,0.5)",
-                      zIndex: 10,
-                    }}
-                  />
-                  <div
-                    className="absolute right-3 top-1/2 -translate-y-1/2 font-display font-extrabold text-[0.9rem]"
-                    style={{
-                      color: row.profit ? "var(--color-green)" : "var(--color-muted)",
-                    }}
-                  >
-                    {row.profit ?? "—"}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          )}
         </div>
       </section>
 
-      {/* Activity + Dark earnings chart */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
-        <div className="bg-white border border-border rounded-[16px] p-5 shadow-sm">
-          <div className="flex items-center justify-between gap-3 flex-wrap mb-3.5">
-            <h2 className="font-display text-[1.2rem] font-extrabold text-dark">
-              Activity
-            </h2>
-            <div className="text-[0.75rem] text-muted">
-              jump to:{" "}
-              <span className="text-teal font-semibold cursor-pointer">all</span>
-              {" · "}
-              <span className="cursor-pointer">mine</span>
-              {" · "}
-              <span className="cursor-pointer">finance</span>
+      {/* Activity + earnings placeholder */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5 items-start">
+        <div className="bg-white border border-border rounded-[16px] p-4 sm:p-5 shadow-sm">
+          <h2 className="font-display text-[1.2rem] font-extrabold text-dark mb-3.5">
+            Activity
+          </h2>
+          {activity.length === 0 ? (
+            <div className="text-[0.85rem] text-muted py-6 text-center">
+              No activity yet — it&apos;ll populate as orders are placed and projects move through delivery.
             </div>
-          </div>
-          <div className="flex flex-col">
-            {ACTIVITY.map((a, i) => (
-              <div
-                key={i}
-                className={`flex items-start gap-3 py-3 ${
-                  i < ACTIVITY.length - 1 ? "border-b border-border" : ""
-                }`}
-              >
-                <span
-                  className={`rounded-full px-2 py-[2px] text-[0.62rem] font-extrabold border ${a.tagCls}`}
-                  style={{ letterSpacing: "0.08em" }}
+          ) : (
+            <div className="flex flex-col">
+              {activity.map((a, i) => (
+                <div
+                  key={i}
+                  className={`flex items-start gap-3 py-3 ${
+                    i < activity.length - 1 ? "border-b border-border" : ""
+                  }`}
                 >
-                  {a.tag}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[0.85rem] font-bold text-dark">
-                    {a.title}
+                  <span
+                    className={`rounded-full px-2 py-[2px] text-[0.62rem] font-extrabold border ${a.tagCls}`}
+                    style={{ letterSpacing: "0.08em" }}
+                  >
+                    {a.tag}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[0.85rem] font-bold text-dark">{a.title}</div>
+                    <div className="text-[0.72rem] text-muted">{a.sub}</div>
                   </div>
-                  <div className="text-[0.72rem] text-muted">{a.sub}</div>
+                  <div className="text-[0.72rem] text-muted whitespace-nowrap">
+                    {a.time}
+                  </div>
                 </div>
-                <div className="text-[0.72rem] text-muted whitespace-nowrap">
-                  {a.time}
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        <DarkEarningsChart />
+        <DarkEarningsPanel profit={stats.profitThisMonth} hasData={jobs.length > 0} />
       </div>
     </div>
   );
 }
 
-function LegendPill({ color, label }) {
-  return (
-    <span
-      className="px-2 py-[3px] rounded-full text-[0.65rem] font-bold flex items-center gap-1 border"
-      style={{
-        color,
-        background: `${color}14`,
-        borderColor: `${color}33`,
-      }}
-    >
-      <span
-        className="w-1.5 h-1.5 rounded-full"
-        style={{ background: "currentColor" }}
-      />
-      {label}
-    </span>
-  );
-}
-
-function DarkEarningsChart() {
+function DarkEarningsPanel({ profit, hasData }) {
   return (
     <div
-      className="rounded-[16px] p-5 shadow-lg"
-      style={{
-        background: "linear-gradient(160deg,#0f1a2e,#1a2d4a)",
-      }}
+      className="rounded-[16px] p-4 sm:p-5 shadow-lg"
+      style={{ background: "linear-gradient(160deg,#0f1a2e,#1a2d4a)" }}
     >
       <div
         className="text-[0.65rem] font-bold uppercase text-white/35 mb-1.5"
         style={{ letterSpacing: "0.12em" }}
       >
-        LAST 6 MONTHS · PROFIT
+        THIS MONTH · PROFIT
       </div>
       <div className="flex items-center gap-2.5 mb-4 flex-wrap">
         <div
           className="font-display text-[1.8rem] font-extrabold text-white"
           style={{ letterSpacing: "-0.03em" }}
         >
-          $3,140
+          {formatCents(profit)}
         </div>
-        <span
-          className="text-[0.68rem] font-bold px-2 py-[3px] rounded-full border"
-          style={{
-            background: "rgba(16,185,129,0.2)",
-            color: "var(--color-green)",
-            borderColor: "rgba(16,185,129,0.3)",
-          }}
-        >
-          ↑ trend
-        </span>
       </div>
-      <svg viewBox="0 0 280 90" width="100%" style={{ overflow: "visible" }}>
-        <defs>
-          <linearGradient id="darkChartGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%"   stopColor="#f43f5e" stopOpacity="0.4" />
-            <stop offset="100%" stopColor="#f43f5e" stopOpacity="0.02" />
-          </linearGradient>
-        </defs>
-        <path
-          d="M0,75 C20,72 40,60 60,55 C80,50 100,45 120,38 C140,30 160,25 180,18 C200,12 220,8 240,5 C260,3 270,2 280,1 L280,90 L0,90 Z"
-          fill="url(#darkChartGrad)"
-        />
-        <path
-          d="M0,75 C20,72 40,60 60,55 C80,50 100,45 120,38 C140,30 160,25 180,18 C200,12 220,8 240,5 C260,3 270,2 280,1"
-          fill="none"
-          stroke="#f43f5e"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-        />
-        <text x="0"   y="88" fill="rgba(255,255,255,0.25)" fontSize="8" fontFamily="sans-serif">Nov</text>
-        <text x="50"  y="88" fill="rgba(255,255,255,0.25)" fontSize="8" fontFamily="sans-serif">Dec</text>
-        <text x="108" y="88" fill="rgba(255,255,255,0.25)" fontSize="8" fontFamily="sans-serif">Jan</text>
-        <text x="162" y="88" fill="rgba(255,255,255,0.25)" fontSize="8" fontFamily="sans-serif">Feb</text>
-        <text x="218" y="88" fill="rgba(255,255,255,0.25)" fontSize="8" fontFamily="sans-serif">Mar</text>
-      </svg>
+      {!hasData && (
+        <div className="text-[0.8rem] text-white/50 leading-relaxed">
+          Profit chart will populate as orders are delivered. Place your first
+          order to start building your trailing-month view.
+        </div>
+      )}
     </div>
   );
 }

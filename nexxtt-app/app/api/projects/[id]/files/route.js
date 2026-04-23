@@ -66,7 +66,7 @@ export async function POST(req, { params }) {
   // Verify the project belongs to the uploader's agency (admins skip this check).
   const { data: project } = await admin
     .from("projects")
-    .select("id, job_id")
+    .select("id, job_id, status")
     .eq("id", id)
     .single();
   if (!project) return Response.json({ error: "Project not found" }, { status: 404 });
@@ -119,6 +119,18 @@ export async function POST(req, { params }) {
     // Clean up the uploaded object — no row to point at it.
     await admin.storage.from("delivered-files").remove([storagePath]);
     return Response.json({ error: rowErr.message }, { status: 500 });
+  }
+
+  // First deliverable upload moves the project to "in_review" so the client
+  // sees a Approve / Request revision prompt. We only advance from the
+  // earlier states — once the client has acted (delivered, revision_requested,
+  // disputed) the agency uploading additional files mustn't undo that.
+  const ADVANCE_FROM = new Set(["brief_pending", "in_progress", "revision_requested"]);
+  if (ADVANCE_FROM.has(project.status)) {
+    await admin
+      .from("projects")
+      .update({ status: "in_review", updated_at: new Date().toISOString() })
+      .eq("id", id);
   }
 
   // Notify the client (agency_client via clients.portal_user_id, or direct_client)

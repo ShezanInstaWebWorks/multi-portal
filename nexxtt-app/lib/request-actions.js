@@ -18,11 +18,11 @@ export function availableActions({ request, viewerRole, viewerUserId }) {
       actions.push("cancel");
       if (request.status === "counter_offered") actions.push("accept");
     } else {
-      // Counterparty: agency on client-initiated must counter or reject — not accept.
-      if (!(tier === "agency" && viewerRole === "agency" && clientInitiated)) {
-        actions.push("accept");
-      }
-      actions.push("counter", "reject");
+      // Counterparty can accept, counter, or reject.
+      // For client-initiated agency-tier requests, agency accepting routes the
+      // request through admin approval (for the delivery date) — handled in
+      // the /accept API via needsAdminApproval().
+      actions.push("accept", "counter", "reject");
     }
   }
 

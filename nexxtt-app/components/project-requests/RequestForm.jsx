@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/components/shared/Toast";
 
 // Shared "new project request" form. The caller scopes what gets submitted —
 // agency_client + direct_client don't need to pick a counterparty, but an
@@ -15,17 +16,16 @@ export function RequestForm({
   onCreated,
 }) {
   const router = useRouter();
+  const toast = useToast();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [serviceId, setServiceId] = useState("");
   const [amountDollars, setAmountDollars] = useState("");
   const [deliveryDate, setDeliveryDate] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState(null);
 
   async function submit(e) {
     e.preventDefault();
-    setError(null);
     setSubmitting(true);
     const body = {
       title: title.trim(),
@@ -46,9 +46,10 @@ export function RequestForm({
     const payload = await res.json().catch(() => ({}));
     setSubmitting(false);
     if (!res.ok) {
-      setError(payload.error ?? `Request failed (${res.status})`);
+      toast.error(payload.error ?? `Request failed (${res.status})`);
       return;
     }
+    toast.success("Offer sent");
     setTitle(""); setDescription(""); setServiceId(""); setAmountDollars(""); setDeliveryDate("");
     onCreated?.(payload.request);
     router.refresh();
@@ -118,19 +119,6 @@ export function RequestForm({
             placeholder="Describe the scope, deadlines, any references. Discuss the rest in chat."
           />
         </Field>
-
-        {error && (
-          <div
-            className="rounded-[8px] px-3 py-2 text-[0.82rem]"
-            style={{
-              background: "rgba(239,68,68,0.08)",
-              border: "1px solid rgba(239,68,68,0.25)",
-              color: "var(--color-red)",
-            }}
-          >
-            {error}
-          </div>
-        )}
 
         <div className="flex justify-end">
           <button

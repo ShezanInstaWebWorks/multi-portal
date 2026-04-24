@@ -36,7 +36,7 @@ export default async function DirectOrdersPage() {
             description="Pick the service you need and we'll start work as soon as the brief is in."
             action={
               <Link
-                href="/direct/orders/new"
+                href="/direct/requests"
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-[10px] text-sm font-semibold text-white"
                 style={{ background: "var(--color-teal)", boxShadow: "0 2px 10px rgba(0,184,169,0.25)" }}
               >

@@ -46,12 +46,10 @@ export function canAct({ role, action, currentStatus, tier, isInitiator }) {
 
     case "accept":
       if (!["pending_counterparty", "counter_offered"].includes(currentStatus)) return false;
-      // Agency cannot accept a client-initiated agency-tier request directly —
-      // they must counter (to attach a delivery date) or reject. The client's
-      // acceptance is what routes the request through admin approval.
-      if (tier === "agency" && role === "agency") {
-        return false;
-      }
+      // Any counterparty (or the initiator on a counter_offered) can accept.
+      // For client-initiated agency-tier requests the /accept handler routes
+      // through `pending_admin_approval` so admin can set the delivery date
+      // before it goes live.
       return true;
 
     case "reject":

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatCents } from "@/lib/money";
+import { useToast } from "@/components/shared/Toast";
 
 const STATUS_LABEL = {
   pending_counterparty:   "Awaiting reply",
@@ -34,13 +35,13 @@ const STATUS_STYLE = {
 // link can route inside their portal.
 export function RequestCard({ request, actions = [], viewerRole, services = [], portalProjectBaseHref = null }) {
   const router = useRouter();
+  const toast = useToast();
   const [counterAmount, setCounterAmount] = useState("");
   const [counterDate,   setCounterDate]   = useState(request.proposed_delivery_date ?? "");
   const [preferredDate, setPreferredDate] = useState("");
   const [adminDate,     setAdminDate]     = useState(request.proposed_delivery_date ?? "");
   const [convertStatus, setConvertStatus] = useState("brief_pending");
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState(null);
 
   const isAgencyClientInitiated =
     request.client_id && request.initiator_role === "agency_client";
@@ -55,7 +56,6 @@ export function RequestCard({ request, actions = [], viewerRole, services = [], 
 
   async function send(action, extra = {}) {
     setBusy(true);
-    setError(null);
     const res = await fetch(`/api/project-requests/${request.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -64,9 +64,11 @@ export function RequestCard({ request, actions = [], viewerRole, services = [], 
     const payload = await res.json().catch(() => ({}));
     setBusy(false);
     if (!res.ok) {
-      setError(payload.error ?? `Request failed (${res.status})`);
+      toast.error(payload.error ?? `Request failed (${res.status})`);
       return;
     }
+    const msg = ACTION_SUCCESS[action] ?? "Done";
+    toast.success(msg);
     router.refresh();
   }
 
@@ -175,7 +177,7 @@ export function RequestCard({ request, actions = [], viewerRole, services = [], 
                 onClick={() => send("accept", preferredDate ? { preferredDeliveryDate: preferredDate } : {})}
                 style={{ background: "var(--color-green)", color: "white" }}
               >
-                {isAgencyClientInitiated && viewerRole === "agency_client"
+                {isAgencyClientInitiated && (viewerRole === "agency" || viewerRole === "agency_client")
                   ? "Accept — send for admin approval"
                   : "Accept"}
               </Btn>
@@ -252,21 +254,19 @@ export function RequestCard({ request, actions = [], viewerRole, services = [], 
         <ConvertedJobLink request={request} viewerRole={viewerRole} portalProjectBaseHref={portalProjectBaseHref} />
       )}
 
-      {error && (
-        <div
-          className="rounded-[8px] px-3 py-2 text-[0.82rem]"
-          style={{
-            background: "rgba(239,68,68,0.08)",
-            border: "1px solid rgba(239,68,68,0.25)",
-            color: "var(--color-red)",
-          }}
-        >
-          {error}
-        </div>
-      )}
     </div>
   );
 }
+
+const ACTION_SUCCESS = {
+  counter:       "Counter-offer sent",
+  accept:        "Offer accepted",
+  reject:        "Offer rejected",
+  cancel:        "Request cancelled",
+  send_to_admin: "Sent to admin for review",
+  admin_approve: "Approved — request is now accepted",
+  convert:       "Converted to a job",
+};
 
 function ConvertedJobLink({ request, viewerRole, portalProjectBaseHref }) {
   const projectId = request.converted_to_project_id;

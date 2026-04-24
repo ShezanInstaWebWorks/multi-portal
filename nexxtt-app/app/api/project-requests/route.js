@@ -103,17 +103,13 @@ export async function POST(req) {
     return Response.json({ error: insertErr.message, code: "INSERT_ERROR" }, { status: 500 });
   }
 
-  // Notify the counterparty side
-  const link = inserted.client_id
-    ? "/agency/requests"
-    : (role === "admin" ? "/direct/requests" : "/admin/requests");
+  // Notify the counterparty side — helper builds a per-recipient deep-link.
   await notifyForRequest(admin, {
     request: inserted,
     actorRole: role,
     type: "request_new",
     title: `New project request — ${inserted.title}`,
     body: inserted.description ? inserted.description.slice(0, 140) : "Tap to review and respond.",
-    link,
   });
 
   return Response.json({ request: inserted }, { status: 201 });

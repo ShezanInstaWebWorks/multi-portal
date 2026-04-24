@@ -116,7 +116,7 @@ export default async function DirectDashboardPage() {
             description="Place your first order — once briefing's done, you'll see live progress here."
             action={
               <Link
-                href="/direct/orders/new"
+                href="/direct/requests"
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-[10px] text-sm font-semibold text-white"
                 style={{
                   background: "var(--color-teal)",

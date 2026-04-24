@@ -205,18 +205,15 @@ export async function PATCH(req, { params }) {
     send_to_admin:  `Forwarded to admin: “${updated.title}”`,
     convert:        `Project converted to job: “${updated.title}”`,
   };
-  const link = updated.converted_to_job_id
-    ? (updated.client_id ? `/agency/orders/${updated.converted_to_job_id}` : `/direct/orders/${updated.converted_to_job_id}`)
-    : (updated.client_id
-        ? (role === "admin" ? "/admin/requests" : (role === "agency" ? "/portal" : "/agency/requests"))
-        : "/admin/requests");
+  // Helper builds per-recipient deep-links (admin → /admin, agency → /agency,
+  // client → their portal, direct → /direct). Passing a single link here
+  // would route some recipients to routes they can't view.
   await notifyForRequest(admin, {
     request: updated,
     actorRole: role,
     type: "request_update",
     title: ACTION_TITLES[action] ?? `Update on “${updated.title}”`,
     body: ACTION_TITLES[action] ?? "Tap to view.",
-    link,
   });
 
   return Response.json({ request: updated });

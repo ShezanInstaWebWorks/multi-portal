@@ -138,7 +138,6 @@ export async function POST(req) {
     return Response.json({ error: insertErr.message, code: "INSERT_ERROR" }, { status: 500 });
   }
 
-  const link = linkForConversation(conv, role);
   await notifyForConversation(admin, {
     conversation: conv,
     actorUserId: user.id,
@@ -146,7 +145,6 @@ export async function POST(req) {
     type: "message",
     title: "New message",
     body: text ? text.slice(0, 140) : `📎 ${attachment?.attachment_name ?? "Attachment"}`,
-    link,
   });
 
   return Response.json({ message: inserted }, { status: 201 });
@@ -156,22 +154,6 @@ const CLOSED_PROJECT_STATUSES = new Set(["delivered", "approved", "cancelled"]);
 
 function sanitizeFilename(name) {
   return name.replace(/[^a-zA-Z0-9._-]+/g, "_").slice(0, 120);
-}
-
-function linkForConversation(conv, role) {
-  if (conv.tier === "agency")        return role === "agency_client" ? "/agency/requests" : "/portal";
-  if (conv.tier === "agency_admin")  return role === "admin" ? "/admin/requests" : "/agency/requests?thread=admin";
-  if (conv.tier === "direct")        return role === "direct_client" ? "/admin/requests" : "/direct/requests";
-  if (conv.tier === "project") {
-    if (role === "admin")        return `/admin/projects/${conv.project_id}?tab=chat`;
-    if (role === "agency")       return `/agency/projects/${conv.project_id}?tab=chat`;
-    return `/agency/projects/${conv.project_id}?tab=chat`; // closest fit; clients get notification with deep route
-  }
-  if (conv.tier === "project_admin") {
-    if (role === "admin")  return `/admin/projects/${conv.project_id}?tab=chat&thread=admin`;
-    return `/agency/projects/${conv.project_id}?tab=chat&thread=admin`;
-  }
-  return "/";
 }
 
 async function isClientOwner(admin, userId, clientId) {

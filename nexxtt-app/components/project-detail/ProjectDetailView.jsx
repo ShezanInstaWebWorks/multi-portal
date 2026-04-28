@@ -24,6 +24,7 @@ export function ProjectDetailView({
   viewerIsAdmin = false,
   tabsSlot = null,
   revisionNote = null, // { note, requestedAt, requesterId } — shown when status=revision_requested
+  siblings = null,    // { items: [{ id, status, service:{name,icon,slug} }], baseHref: "/admin/projects" }
 }) {
   const pct = progressPct(service?.slug, project.status);
   const profit = (project.retail_price_cents ?? 0) - (project.cost_price_cents ?? 0);
@@ -145,6 +146,14 @@ export function ProjectDetailView({
           </div>
         </div>
       </div>
+
+      {siblings?.items?.length > 1 && (
+        <SiblingProjectSwitcher
+          items={siblings.items}
+          baseHref={siblings.baseHref}
+          activeId={project.id}
+        />
+      )}
 
       <DisputePanel
         projectId={project.id}
@@ -272,6 +281,70 @@ function stringify(v) {
   if (typeof v === "object") return JSON.stringify(v, null, 2);
   return String(v);
 }
+
+function SiblingProjectSwitcher({ items, baseHref, activeId }) {
+  return (
+    <section
+      className="bg-white border border-border rounded-[14px] p-3 mb-4"
+    >
+      <div
+        className="text-[0.65rem] font-bold uppercase text-muted mb-2 px-1"
+        style={{ letterSpacing: "0.1em" }}
+      >
+        Projects in this order ({items.length})
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {items.map((p) => {
+          const active = p.id === activeId;
+          return (
+            <Link
+              key={p.id}
+              href={`${baseHref}/${p.id}`}
+              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-[10px] text-[0.78rem] font-semibold transition-colors border ${
+                active
+                  ? "bg-teal text-white border-teal shadow-[0_2px_8px_rgba(0,184,169,0.25)]"
+                  : "bg-off text-body border-border hover:border-teal hover:text-teal"
+              }`}
+              style={active ? {} : { background: "var(--color-off)" }}
+            >
+              <span>{p.service?.icon ?? "•"}</span>
+              <span>{p.service?.name ?? "Project"}</span>
+              <span
+                className={`text-[0.62rem] uppercase font-bold px-1.5 py-[1px] rounded-full ${
+                  active ? "bg-white/20" : "bg-white"
+                }`}
+                style={{ letterSpacing: "0.06em", color: active ? "white" : STATUS_COLOR[p.status] ?? "var(--color-muted)" }}
+              >
+                {STATUS_SHORT[p.status] ?? p.status}
+              </span>
+            </Link>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+const STATUS_SHORT = {
+  brief_pending:      "Brief",
+  in_progress:        "Active",
+  in_review:          "Review",
+  revision_requested: "Revisions",
+  delivered:          "Delivered",
+  approved:           "Approved",
+  disputed:           "Disputed",
+  cancelled:          "Cancelled",
+};
+const STATUS_COLOR = {
+  brief_pending:      "var(--color-navy)",
+  in_progress:        "var(--color-teal)",
+  in_review:          "var(--color-amber)",
+  revision_requested: "var(--color-blue)",
+  delivered:          "var(--color-green)",
+  approved:           "var(--color-green)",
+  disputed:           "var(--color-red)",
+  cancelled:          "var(--color-muted)",
+};
 
 function RevisionNoteBanner({ note, requestedAt, revisionCount, canReply, projectId, viewerIsAdmin }) {
   const when = requestedAt

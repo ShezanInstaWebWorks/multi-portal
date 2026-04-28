@@ -9,8 +9,8 @@ export default function DirectLayout({ children }) {
   return (
     <Suspense fallback={<div className="min-h-screen bg-off" />}>
       <EmbedShell
-        shell={
-          <div className="flex min-h-screen bg-off">
+        sidebar={
+          <>
             <aside
               className="hidden lg:flex w-sidebar flex-col fixed inset-y-0 left-0 z-40"
               style={{ boxShadow: "4px 0 24px rgba(11,31,58,0.18)" }}
@@ -20,13 +20,12 @@ export default function DirectLayout({ children }) {
             <MobileDrawer>
               <DirectSidebar />
             </MobileDrawer>
-            <div className="flex-1 flex flex-col lg:ml-sidebar">{children}</div>
-            <DirectBottomNav />
-            <CommandPalette />
-          </div>
+          </>
         }
+        footer={<DirectBottomNav />}
+        overlays={<CommandPalette />}
       >
-        <div className="min-h-screen bg-off flex flex-col">{children}</div>
+        {children}
       </EmbedShell>
     </Suspense>
   );

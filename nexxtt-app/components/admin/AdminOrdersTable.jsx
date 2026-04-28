@@ -52,11 +52,22 @@ export function AdminOrdersTable({ rows }) {
                       {r.job_number}
                     </td>
                     <td className="px-4 py-3">
-                      <div className="font-semibold text-dark flex items-center gap-1.5">
-                        <span>{r.serviceIcon}</span>
-                        <span>{r.serviceName ?? "—"}</span>
-                      </div>
-                      <div className="text-[0.72rem] text-muted">
+                      {r.services?.length ? (
+                        <div className="flex flex-wrap items-center gap-1.5 max-w-[280px]">
+                          {r.services.map((s, idx) => (
+                            <span
+                              key={idx}
+                              className="inline-flex items-center gap-1 px-2 py-[2px] rounded-full text-[0.72rem] font-semibold bg-off border border-border text-body whitespace-nowrap"
+                            >
+                              <span>{s.icon}</span>
+                              <span>{s.name}</span>
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="font-semibold text-dark text-[0.85rem]">—</div>
+                      )}
+                      <div className="text-[0.72rem] text-muted mt-1">
                         {r.projectCount} project{r.projectCount === 1 ? "" : "s"}
                         {r.is_rush && " · rush"}
                       </div>

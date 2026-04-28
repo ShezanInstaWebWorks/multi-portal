@@ -1,10 +1,13 @@
-import Link from "next/link";
 import { Suspense } from "react";
 import { redirect, notFound } from "next/navigation";
 import { ClientTopbar } from "@/components/client-portal/ClientTopbar";
 import { CommandPalette } from "@/components/search/CommandPalette";
 import { resolvePortalContext } from "@/lib/portal-context";
 import { EmbedShell } from "@/components/layout/EmbedShell";
+import { ClientMobileDrawer } from "@/components/layout/ClientMobileDrawer";
+import { NotificationBell } from "@/components/shared/NotificationBell";
+import { ClientSidebarContent } from "./ClientSidebarContent";
+import { MobileAppBar } from "./MobileAppBar";
 
 // Don't long-cache — agencies change brand colours/logos and expect it live.
 export const revalidate = 60;
@@ -37,6 +40,8 @@ export default async function ClientPortalLayout({ children, params }) {
     ? client.contact_name
     : profile?.role === "admin" ? "Admin Preview" : "Agency Preview";
 
+  const firstName = (userName ?? "").split(/\s+/)[0] || "User";
+
   const cssVars = `
     :root {
       --wl-primary: ${brand.primary_colour ?? "#0B1F3A"};
@@ -47,50 +52,59 @@ export default async function ClientPortalLayout({ children, params }) {
   return (
     <Suspense fallback={<div className="min-h-screen bg-off" />}>
       <EmbedShell
-        shell={
-          <div className="flex min-h-screen flex-col bg-off">
-            <style dangerouslySetInnerHTML={{ __html: cssVars }} />
-            <ClientTopbar brand={brand} userName={userName} />
-            <nav
-              className="bg-white border-b border-border px-4 sm:px-6 lg:px-8 flex items-center gap-1 overflow-x-auto"
-              style={{ boxShadow: "0 1px 0 var(--color-border)" }}
+        sidebar={
+          <>
+            <aside
+              className="hidden lg:flex w-sidebar flex-col fixed inset-y-0 left-0 z-40"
+              style={{ boxShadow: "4px 0 24px rgba(11,31,58,0.18)" }}
             >
-              <PortalNavLink href={`/portal/${agencySlug}/${clientSlug}`}           label="Dashboard" />
-              <PortalNavLink href={`/portal/${agencySlug}/${clientSlug}/requests`}  label="Requests" />
-            </nav>
-            {(isAgencyOfRecord || isAdmin) && !isClientOwner && (
-              <div
-                className="text-center text-[0.72rem] font-semibold py-1.5"
-                style={{
-                  background: "rgba(245,158,11,0.12)",
-                  color: "var(--color-amber)",
-                  borderBottom: "1px solid rgba(245,158,11,0.25)",
-                }}
-              >
-                👁 {isAdmin ? "Admin preview" : "Agency preview"} — you&apos;re seeing the client&apos;s view
-              </div>
-            )}
-            {children}
-            <CommandPalette />
-          </div>
+              <ClientSidebarContent
+                brand={brand}
+                userName={userName}
+                firstName={firstName}
+                agencySlug={agencySlug}
+                clientSlug={clientSlug}
+                userId={user.id}
+              />
+            </aside>
+            <ClientMobileDrawer>
+              <ClientSidebarContent
+                brand={brand}
+                userName={userName}
+                firstName={firstName}
+                agencySlug={agencySlug}
+                clientSlug={clientSlug}
+                userId={user.id}
+                mobile
+              />
+            </ClientMobileDrawer>
+          </>
         }
+        topbar={
+          <MobileAppBar
+            brand={brand}
+            userId={user.id}
+            userName={userName}
+          />
+        }
+        preview={
+          (isAgencyOfRecord || isAdmin) && !isClientOwner ? (
+            <div
+              className="text-center text-[0.72rem] font-semibold py-1.5"
+              style={{
+                background: "rgba(245,158,11,0.12)",
+                color: "var(--color-amber)",
+                borderBottom: "1px solid rgba(245,158,11,0.25)",
+              }}
+            >
+              👁 {isAdmin ? "Admin preview" : "Agency preview"} — you&apos;re seeing the client&apos;s view
+            </div>
+          ) : null
+        }
+        overlays={<CommandPalette />}
       >
-        <div className="min-h-screen bg-off flex flex-col">
-          <style dangerouslySetInnerHTML={{ __html: cssVars }} />
-          {children}
-        </div>
+        {children}
       </EmbedShell>
     </Suspense>
-  );
-}
-
-function PortalNavLink({ href, label }) {
-  return (
-    <Link
-      href={href}
-      className="inline-flex items-center px-3 py-2.5 text-[0.85rem] font-semibold text-muted hover:text-dark border-b-2 border-transparent hover:border-[var(--wl-accent)] whitespace-nowrap"
-    >
-      {label}
-    </Link>
   );
 }

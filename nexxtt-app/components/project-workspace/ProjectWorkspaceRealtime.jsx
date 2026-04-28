@@ -9,14 +9,17 @@ import { createClient } from "@/lib/supabase/client";
 // uses the per-project filter, project subscription uses id.
 export function ProjectWorkspaceRealtime({ projectId, conversationId }) {
   const router = useRouter();
+  const routerRef = useRef(router);
+  routerRef.current = router;
   const timerRef = useRef(null);
 
+  // deps exclude `router` — see RequestsRealtime for why.
   useEffect(() => {
     if (!projectId) return;
     const supabase = createClient();
     const bump = () => {
       if (timerRef.current) clearTimeout(timerRef.current);
-      timerRef.current = setTimeout(() => router.refresh(), 350);
+      timerRef.current = setTimeout(() => routerRef.current.refresh(), 350);
     };
     const channel = supabase
       .channel(`project-workspace-${projectId}`)
@@ -36,7 +39,7 @@ export function ProjectWorkspaceRealtime({ projectId, conversationId }) {
       if (timerRef.current) clearTimeout(timerRef.current);
       supabase.removeChannel(channel);
     };
-  }, [projectId, conversationId, router]);
+  }, [projectId, conversationId]);
 
   return null;
 }

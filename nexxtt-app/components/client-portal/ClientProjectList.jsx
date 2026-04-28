@@ -40,36 +40,34 @@ export function ClientProjectList({ jobs, basePath }) {
       {/* Action needed banner */}
       {actionNeeded > 0 && (
         <div
-          className="rounded-[16px] p-4 flex items-center gap-3.5 mb-5"
+          className="rounded-[10px] px-3 py-2 flex items-center gap-2 mb-3"
           style={{
             background: "white",
-            border: "1.5px solid rgba(245,158,11,0.3)",
+            border: "1px solid rgba(245,158,11,0.3)",
           }}
         >
-          <span className="text-[1.1rem] shrink-0">⏰</span>
-          <div className="flex-1 min-w-0">
-            <div className="text-[0.85rem] font-bold text-dark">
-              {actionNeeded} {actionNeeded === 1 ? "deliverable" : "deliverables"} need your approval
-            </div>
-            <div className="text-[0.73rem] text-muted mt-px">
-              Review and sign off so the work can move forward.
-            </div>
+          <span className="text-[0.95rem] shrink-0">⏰</span>
+          <div className="flex-1 min-w-0 text-[0.78rem]">
+            <span className="font-bold text-dark">
+              {actionNeeded} {actionNeeded === 1 ? "deliverable" : "deliverables"}
+            </span>
+            <span className="text-muted"> need your approval — review to keep work moving.</span>
           </div>
         </div>
       )}
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-5 flex-wrap">
+      <div className="flex gap-1.5 mb-3 flex-wrap">
         <Tab label={`Current (${current.length})`} active={tab === "current"} onClick={() => setTab("current")} />
         <Tab label={`Past (${past.length})`}       active={tab === "past"}    onClick={() => setTab("past")} />
       </div>
 
       {list.length === 0 ? (
-        <div className="text-center py-10 text-sm text-muted">
+        <div className="text-center py-8 text-sm text-muted">
           Nothing {tab === "current" ? "active" : "completed"} yet.
         </div>
       ) : (
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-1">
           {list.map((j) => (
             <JobCard
               key={j.id}
@@ -111,7 +109,7 @@ function Tab({ label, active, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="px-5 py-2 rounded-full text-[0.82rem] font-semibold transition-all border"
+      className="px-3.5 py-1 rounded-full text-[0.78rem] font-semibold transition-all border"
       style={
         active
           ? {
@@ -142,24 +140,24 @@ function JobCard({ job, basePath, expanded, onToggle, onOpenProject }) {
 
   return (
     <div
-      className="bg-white rounded-[20px] overflow-hidden transition-shadow duration-200"
+      className="bg-white rounded-[12px] overflow-hidden transition-shadow duration-200"
       style={{
         border: "1px solid var(--color-border)",
         boxShadow: expanded
-          ? "0 8px 28px rgba(11,31,58,0.12)"
-          : "0 1px 4px rgba(11,31,58,0.06)",
+          ? "0 4px 16px rgba(11,31,58,0.10)"
+          : "0 1px 3px rgba(11,31,58,0.05)",
       }}
     >
       <button
         onClick={onToggle}
-        className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors"
+        className="w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors"
         style={{
           background: expanded ? "var(--wl-primary)" : "transparent",
           color: expanded ? "white" : undefined,
         }}
       >
         <div
-          className="w-7 h-7 rounded-full flex items-center justify-center text-[0.9rem] shrink-0 transition-transform"
+          className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-transform"
           style={{
             background: expanded ? "var(--wl-accent)" : "transparent",
             color: expanded ? "var(--wl-primary)" : "var(--color-muted)",
@@ -167,39 +165,31 @@ function JobCard({ job, basePath, expanded, onToggle, onOpenProject }) {
             transform: expanded ? "rotate(90deg)" : "rotate(0deg)",
           }}
         >
-          <ChevronRight className="w-3.5 h-3.5" strokeWidth={2.5} />
+          <ChevronRight className="w-3 h-3" strokeWidth={2.5} />
         </div>
 
-        <div className="flex-1 min-w-0">
-          <div
-            className="text-[0.72rem] flex items-center gap-1.5 mb-0.5"
-            style={{ color: expanded ? "rgba(255,255,255,0.5)" : "var(--color-muted)" }}
-          >
-            <span>{created}</span>
-            <StatusBadge status={job.status} />
-          </div>
-          <div
-            className="font-display text-[1rem] font-extrabold tracking-tight"
+        <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
+          <span
+            className="font-display text-[0.88rem] font-extrabold tracking-tight"
             style={{ color: expanded ? "white" : "var(--color-dark)" }}
           >
             {job.job_number}
-          </div>
-          <div
-            className="text-[0.72rem] mt-0.5"
-            style={{
-              color: expanded ? "rgba(255,255,255,0.4)" : "var(--color-muted)",
-            }}
+          </span>
+          <StatusBadge status={job.status} />
+          <span
+            className="text-[0.7rem]"
+            style={{ color: expanded ? "rgba(255,255,255,0.55)" : "var(--color-muted)" }}
           >
-            {projectCount} project{projectCount === 1 ? "" : "s"}
-            {job.is_rush && " · Rush delivery"}
-          </div>
+            {created} · {projectCount} project{projectCount === 1 ? "" : "s"}
+            {job.is_rush && " · rush"}
+          </span>
         </div>
 
-        <div className="hidden sm:flex gap-1.5 shrink-0 flex-wrap max-w-[220px]">
+        <div className="hidden sm:flex items-center gap-1 shrink-0 flex-wrap justify-end max-w-[300px]">
           {serviceTags.map((s, i) => (
             <span
               key={i}
-              className="inline-flex items-center gap-1 px-2.5 py-[3px] rounded-full text-[0.72rem] whitespace-nowrap"
+              className="inline-flex items-center gap-1 px-2 py-[1px] rounded-full text-[0.68rem] whitespace-nowrap"
               style={{
                 background: expanded ? "rgba(255,255,255,0.08)" : "var(--color-off)",
                 border: expanded
@@ -212,6 +202,14 @@ function JobCard({ job, basePath, expanded, onToggle, onOpenProject }) {
               <span>{s?.name ?? "Service"}</span>
             </span>
           ))}
+          {projectCount > serviceTags.length && (
+            <span
+              className="text-[0.68rem]"
+              style={{ color: expanded ? "rgba(255,255,255,0.55)" : "var(--color-muted)" }}
+            >
+              +{projectCount - serviceTags.length}
+            </span>
+          )}
         </div>
       </button>
 

@@ -76,8 +76,18 @@ export default async function AdminOrdersPage({ searchParams }) {
               ? directName.get(j.direct_client_user_id) ?? "—"
               : "—";
             const clientLabel = j.client_id ? clientName.get(j.client_id) : null;
-            const firstProject = (j.projects ?? [])[0];
-            const firstService = firstProject?.services;
+            const projectList = j.projects ?? [];
+            const firstProject = projectList[0];
+            // De-dup services so a job with two "Logo Design" projects only
+            // shows the service once. Order preserved by first appearance.
+            const seen = new Set();
+            const services = [];
+            for (const p of projectList) {
+              const s = p.services;
+              if (!s || seen.has(s.name)) continue;
+              seen.add(s.name);
+              services.push({ name: s.name, icon: s.icon ?? "•" });
+            }
             return {
               id: j.id,
               job_number: j.job_number,
@@ -88,9 +98,8 @@ export default async function AdminOrdersPage({ searchParams }) {
               via,
               whoName,
               clientLabel,
-              serviceName: firstService?.name ?? null,
-              serviceIcon: firstService?.icon ?? "•",
-              projectCount: j.projects?.length ?? 0,
+              services,
+              projectCount: projectList.length,
               firstProjectId: firstProject?.id ?? null,
               dateLabel: new Date(j.created_at).toLocaleDateString("en-AU", {
                 day: "2-digit", month: "short",

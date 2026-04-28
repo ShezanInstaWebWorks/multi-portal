@@ -62,6 +62,20 @@ export default async function AgencyProjectDetailPage({ params, searchParams }) 
   const conversationId = conversationRes.data?.id ?? null;
   let adminConversationId = adminConvRes.data?.id ?? null;
 
+  const { data: siblingProjects } = await adminClient
+    .from("projects")
+    .select("id, status, services ( id, name, icon, slug )")
+    .eq("job_id", project.job_id)
+    .order("created_at", { ascending: true });
+  const siblings = {
+    items: (siblingProjects ?? []).map((p) => ({
+      id: p.id,
+      status: p.status,
+      service: p.services ?? null,
+    })),
+    baseHref: "/agency/projects",
+  };
+
   // Lazy-create the admin↔agency private thread for agency-owned projects.
   if (!adminConversationId && job?.agency_id) {
     const { data: created } = await adminClient
@@ -102,6 +116,7 @@ export default async function AgencyProjectDetailPage({ params, searchParams }) 
             backLabel="Back to orders"
             tabsSlot={<ProjectTabs />}
             revisionNote={revisionNote}
+            siblings={siblings}
           />
         )}
 

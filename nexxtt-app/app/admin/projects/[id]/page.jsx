@@ -63,6 +63,22 @@ export default async function AdminProjectWorkspace({ params, searchParams }) {
   const tasks = tasksRes.data ?? [];
   let conversationId = conversationRes.data?.id ?? null;
   let adminConversationId = adminConvRes.data?.id ?? null;
+
+  // Sibling projects under the same job — drives the project switcher when
+  // an order has multiple services.
+  const { data: siblingProjects } = await admin
+    .from("projects")
+    .select("id, status, services ( id, name, icon, slug )")
+    .eq("job_id", project.job_id)
+    .order("created_at", { ascending: true });
+  const siblings = {
+    items: (siblingProjects ?? []).map((p) => ({
+      id: p.id,
+      status: p.status,
+      service: p.services ?? null,
+    })),
+    baseHref: "/admin/projects",
+  };
   const revisionNote = project.status === "revision_requested"
     ? await getLatestRevisionNote(admin, project.id)
     : null;
@@ -122,6 +138,7 @@ export default async function AdminProjectWorkspace({ params, searchParams }) {
               backHref="/admin/orders"
               backLabel="Back to orders"
               revisionNote={revisionNote}
+              siblings={siblings}
               tabsSlot={
                 <div className="mb-3 flex items-center gap-2 flex-wrap">
                   <span

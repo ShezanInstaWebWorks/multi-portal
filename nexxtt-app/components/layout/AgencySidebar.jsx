@@ -39,35 +39,34 @@ export function AgencySidebar() {
     <div
       className="h-full flex flex-col text-white"
       style={{
-        background:
-          "linear-gradient(180deg, #1e3a5f 0%, #0d1f38 60%, #060f1d 100%)",
+        background: "#1a1f3a",
       }}
     >
       {/* Logo row */}
-      <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between">
-        <NexxttLogo width={110} />
+      <div className="px-4 py-5 border-b border-white/10 flex items-center justify-between">
+        <NexxttLogo width={120} />
         <button
           onClick={() => setSidebarOpen(false)}
-          className="lg:hidden w-7 h-7 rounded-md flex items-center justify-center text-white/40 hover:text-white/70 bg-white/5"
+          className="lg:hidden w-8 h-8 rounded-lg flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 transition-colors"
           aria-label="Close menu"
         >
-          <X className="w-3.5 h-3.5" />
+          <X className="w-4 h-4" />
         </button>
       </div>
 
       {/* Agency info card */}
-      <div className="px-5 py-3.5 border-b border-white/5 flex items-center gap-2.5">
+      <div className="px-4 py-4 border-b border-white/10 flex items-center gap-3">
         <div
-          className="w-9 h-9 rounded-lg flex items-center justify-center font-display font-extrabold text-sm"
-          style={{ background: "rgba(0,184,169,0.18)", color: "var(--color-teal)" }}
+          className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm"
+          style={{ background: "linear-gradient(135deg, #00b8a9 0%, #00a095 100%)", color: "#1a1f3a" }}
         >
           BA
         </div>
-        <div className="min-w-0">
-          <div className="font-display font-bold text-sm text-white truncate">
+        <div className="min-w-0 flex-1">
+          <div className="font-semibold text-sm text-white truncate">
             Bright Agency Co.
           </div>
-          <div className="text-[0.7rem] text-white/40">Agency Partner</div>
+          <div className="text-[0.7rem] text-white/50">Agency Partner</div>
         </div>
       </div>
 
@@ -111,22 +110,19 @@ export function AgencySidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="px-5 py-4 border-t border-white/5">
-        <div className="flex items-center gap-2.5">
+      <div className="px-4 py-4 border-t border-white/10">
+        <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer">
           <div
-            className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs"
-            style={{ background: "rgba(255,255,255,0.08)", color: "white" }}
+            className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm"
+            style={{ background: "#00b8a9", color: "#1a1f3a" }}
           >
             AJ
           </div>
-          <div className="text-sm font-semibold text-white/80">Alex Johnson</div>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-semibold text-white truncate">Alex Johnson</div>
+            <div className="text-[0.7rem] text-white/50">Admin</div>
+          </div>
         </div>
-        <Link
-          href="/login"
-          className="block mt-2 text-[0.72rem] text-white/30 hover:text-white/60 text-left"
-        >
-          Sign out
-        </Link>
       </div>
     </div>
   );
@@ -136,8 +132,8 @@ function NavSection({ label, children }) {
   return (
     <div className="mb-1">
       <div
-        className="px-5 pt-2.5 pb-1 text-[0.62rem] font-bold uppercase text-white/25"
-        style={{ letterSpacing: "0.14em" }}
+        className="px-5 pt-4 pb-2 text-[0.6rem] font-semibold uppercase text-white/40"
+        style={{ letterSpacing: "0.1em" }}
       >
         {label}
       </div>
@@ -151,12 +147,12 @@ function NavGroup({ label, open, onToggle, children }) {
     <div className="mb-1">
       <button
         onClick={onToggle}
-        className="w-full px-5 pt-2.5 pb-1 text-[0.62rem] font-bold uppercase text-white/25 flex items-center justify-between"
-        style={{ letterSpacing: "0.14em" }}
+        className="w-full px-5 pt-4 pb-2 text-[0.6rem] font-semibold uppercase text-white/40 flex items-center justify-between"
+        style={{ letterSpacing: "0.1em" }}
       >
         <span>{label}</span>
         <span
-          className="text-[0.55rem] transition-transform duration-200"
+          className="text-[0.5rem] transition-transform duration-200 text-white/40"
           style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
         >
           ▼
@@ -176,33 +172,18 @@ function NavItem({ item, pathname }) {
   return (
     <Link
       href={item.href}
-      className={`group flex items-center gap-2.5 mx-2.5 my-0.5 px-3 py-2 rounded-lg text-[0.83rem] font-medium transition-all ${
-        isActive ? "text-white" : "text-white/65 hover:text-white"
+      className={`group flex items-center gap-3 mx-2 my-0.5 px-3 py-2.5 rounded-lg text-[0.85rem] font-medium transition-all ${
+        isActive ? "text-white" : "text-white/60 hover:text-white hover:bg-white/5"
       }`}
       style={
         isActive
           ? {
-              background:
-                "linear-gradient(90deg, rgba(255,100,50,0.25), rgba(255,160,60,0.12))",
-              borderLeft: "3px solid #ff7c35",
-              boxShadow:
-                "0 2px 14px rgba(255,100,50,0.2), inset 0 0 0 1px rgba(255,100,50,0.15)",
+              background: "rgba(0,184,169,0.15)",
+              borderLeft: "3px solid #00b8a9",
               paddingLeft: "calc(0.75rem - 3px)",
             }
           : undefined
       }
-      onMouseEnter={(e) => {
-        if (!isActive) {
-          e.currentTarget.style.background = "rgba(255,255,255,0.04)";
-          e.currentTarget.style.transform = "translateX(2px)";
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!isActive) {
-          e.currentTarget.style.background = "";
-          e.currentTarget.style.transform = "";
-        }
-      }}
     >
       <span className="w-4 h-4 flex items-center justify-center text-[0.9rem] shrink-0">
         {item.icon}

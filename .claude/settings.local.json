@@ -1,16 +1,19 @@
 {
+  "env": {
+    "ANTHROPIC_BASE_URL": "https://api.minimax.io/anthropic",
+    "ANTHROPIC_AUTH_TOKEN": "sk-cp-OO5I5POjMfxRpOiLD8bcWqWVScN1KOOwASlrm8-eKmwMNTKDnblvpbSCF340emEshf_0frAp7itatyQC0GMU2OtKa4t7dN546O3zWbv2YN9BH0I3T8xDX3U",
+    "ANTHROPIC_MODEL": "MiniMax-M2",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "MiniMax-M2",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "MiniMax-M2",
+    "API_TIMEOUT_MS": "600000",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1"
+  },
   "permissions": {
     "allow": [
-      "mcp__supabase__list_tables",
-      "mcp__supabase__list_migrations",
-      "mcp__supabase__list_edge_functions",
-      "mcp__supabase__get_project_url",
-      "mcp__supabase__apply_migration",
-      "Bash(node node_modules/next/dist/bin/next build)",
-      "Bash(awk -F= '{ k=$1; v=substr\\($0, length\\($1\\)+2\\); if \\(length\\(v\\) < 8\\) { print k \"=EMPTY/PLACEHOLDER \\(len \" length\\(v\\) \"\\)\" } else { print k \"=set \\(len \" length\\(v\\) \", prefix \" substr\\(v,1,4\\) \"...\\)\" } }')",
-      "mcp__supabase__execute_sql",
-      "Bash(xargs grep *)",
-      "mcp__supabase__get_project"
-    ]
+      "Skill(update-config)",
+      "Skill(update-config:*)",
+      "mcp__supabase__list_projects"
+    ],
+    "deny": []
   }
 }

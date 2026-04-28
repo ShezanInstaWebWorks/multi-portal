@@ -61,6 +61,20 @@ export default async function ClientProjectDetailPage({ params, searchParams }) 
   const revisionNote = project.status === "revision_requested"
     ? await getLatestRevisionNote(admin, project.id)
     : null;
+
+  const { data: siblingProjects } = await admin
+    .from("projects")
+    .select("id, status, services ( id, name, icon, slug )")
+    .eq("job_id", project.job_id)
+    .order("created_at", { ascending: true });
+  const siblings = {
+    items: (siblingProjects ?? []).map((p) => ({
+      id: p.id,
+      status: p.status,
+      service: p.services ?? null,
+    })),
+    baseHref: `/portal/${agencySlug}/${clientSlug}/projects`,
+  };
   const { data: messages } = conversationId
     ? await admin.from("messages").select("*").eq("conversation_id", conversationId).order("created_at", { ascending: true }).limit(200)
     : { data: [] };
@@ -80,6 +94,7 @@ export default async function ClientProjectDetailPage({ params, searchParams }) 
           backLabel="Back to projects"
           tabsSlot={<ProjectTabs />}
           revisionNote={revisionNote}
+          siblings={siblings}
         />
       )}
 

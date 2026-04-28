@@ -5,6 +5,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { DirectTopbar } from "@/components/layout/DirectTopbar";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { WalletCard } from "@/components/wallet/WalletCard";
 
 export const metadata = {
   title: "Dashboard · nexxtt.io",
@@ -100,6 +101,11 @@ export default async function DirectDashboardPage() {
           </Link>
         </div>
 
+        {/* Wallet */}
+        <div className="mb-6">
+          <WalletCard />
+        </div>
+
         {/* Stat grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
           <Stat label="Active Projects"       value={stats.active}        sub="In production"    subColor="var(--color-teal)" accent="var(--color-teal)" />
@@ -116,7 +122,7 @@ export default async function DirectDashboardPage() {
             description="Place your first order — once briefing's done, you'll see live progress here."
             action={
               <Link
-                href="/direct/requests"
+                href="/direct/orders/new"
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-[10px] text-sm font-semibold text-white"
                 style={{
                   background: "var(--color-teal)",

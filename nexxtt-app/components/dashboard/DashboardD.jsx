@@ -28,13 +28,17 @@ function computeStats(jobs, clientsCount) {
   const prevMonth = monthKey(prevMonthDate);
 
   let activeProjects = 0;
+  let completedProjects = 0;
+  let totalProjects = 0;
   let activeThisMonthStarted = 0;
   let revenueThisMonth = 0;
   let revenuePrevMonth = 0;
   let costThisMonth = 0;
   let profitThisMonth = 0;
+  let totalRevenue = 0;
 
   for (const j of jobs) {
+    totalRevenue += j.total_retail_cents ?? 0;
     const mk = monthKey(j.created_at);
     const isThis = mk === thisMonth;
     const isPrev = mk === prevMonth;
@@ -47,7 +51,13 @@ function computeStats(jobs, clientsCount) {
     if (isPrev) revenuePrevMonth += j.total_retail_cents ?? 0;
 
     for (const p of j.projects ?? []) {
-      if (ACTIVE_PROJECT_STATUSES.has(p.status)) activeProjects += 1;
+      totalProjects += 1;
+      if (ACTIVE_PROJECT_STATUSES.has(p.status)) {
+        activeProjects += 1;
+      }
+      if (p.status === "delivered" || p.status === "approved") {
+        completedProjects += 1;
+      }
     }
   }
 
@@ -62,12 +72,15 @@ function computeStats(jobs, clientsCount) {
 
   return {
     activeProjects,
+    completedProjects,
+    totalProjects,
     activeThisMonthStarted,
     revenueThisMonth,
     profitThisMonth,
     revenueDelta,
     margin,
     clientsCount,
+    totalRevenue,
   };
 }
 
@@ -147,32 +160,32 @@ export function DashboardD({ agency, firstName, jobs = [], clientsCount = 0 }) {
 
   const STATS = [
     {
-      label: "ACTIVE",
+      label: "Total Projects",
+      value: String(stats.totalProjects || jobs.length),
+      icon: "📁",
+      bgColor: "bg-blue-50",
+      borderColor: "border-l-blue-500",
+    },
+    {
+      label: "Active Projects",
       value: String(stats.activeProjects),
-      pill: stats.activeThisMonthStarted > 0 ? `+${stats.activeThisMonthStarted} this mo` : "none yet",
-      pillCls: "bg-teal/10 text-teal border border-teal/20",
-      border: "var(--color-teal)",
+      icon: "⚡",
+      bgColor: "bg-emerald-50",
+      borderColor: "border-l-emerald-500",
     },
     {
-      label: "REVENUE · MTD",
-      value: formatCents(stats.revenueThisMonth),
-      pill: stats.revenueDelta == null ? "—" : `${stats.revenueDelta >= 0 ? "↑" : "↓"}${Math.abs(stats.revenueDelta)}%`,
-      pillCls: "bg-green/10 text-green border border-green/20",
-      border: "#3b82f6",
+      label: "Completed",
+      value: String(stats.completedProjects),
+      icon: "✅",
+      bgColor: "bg-purple-50",
+      borderColor: "border-l-purple-500",
     },
     {
-      label: "PROFIT · MTD",
-      value: formatCents(stats.profitThisMonth),
-      pill: stats.margin == null ? "—" : `${stats.margin}% margin`,
-      pillCls: "bg-green/10 text-green border border-green/20",
-      border: "var(--color-green)",
-    },
-    {
-      label: "CLIENTS",
-      value: String(stats.clientsCount),
-      pill: stats.clientsCount === 0 ? "invite your first" : `${stats.clientsCount} total`,
-      pillCls: "bg-amber/10 text-amber border border-amber/20",
-      border: "var(--color-amber)",
+      label: "Revenue",
+      value: formatCents(stats.totalRevenue),
+      icon: "💰",
+      bgColor: "bg-amber-50",
+      borderColor: "border-l-amber-500",
     },
   ];
 
@@ -245,32 +258,74 @@ export function DashboardD({ agency, firstName, jobs = [], clientsCount = 0 }) {
       </div>
 
       {/* 4 stat boxes */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5 mb-4 sm:mb-5">
-        {STATS.map((s) => (
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {STATS.map((s, idx) => (
           <div
             key={s.label}
-            className="relative bg-white border border-border rounded-[10px] px-3.5 sm:px-5 py-3 sm:py-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all overflow-hidden min-w-0"
+            className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all"
           >
-            <div
-              className="absolute left-0 top-0 bottom-0 w-[3px]"
-              style={{ background: s.border }}
-            />
-            <div
-              className="text-[0.62rem] sm:text-[0.65rem] uppercase text-muted font-bold mb-1 truncate"
-              style={{ letterSpacing: "0.08em" }}
-            >
-              {s.label}
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-medium text-gray-500">{s.label}</span>
+              <span className="text-xl">{s.icon}</span>
             </div>
-            <div className="font-display text-[1.35rem] sm:text-[1.8rem] font-extrabold text-dark leading-none truncate">
-              {s.value}
-            </div>
-            <span
-              className={`inline-block mt-1.5 rounded-full px-2 py-[1px] text-[0.6rem] sm:text-[0.62rem] font-bold ${s.pillCls} max-w-full truncate`}
-            >
-              {s.pill}
-            </span>
+            <div className="text-2xl font-bold text-gray-900">{s.value}</div>
           </div>
         ))}
+      </div>
+
+      {/* Projects Table */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-900">Projects</h2>
+          <button className="text-sm text-teal font-medium hover:underline">View All</button>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Project Name</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Client</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Due Date</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Budget</th>
+                <th className="px-5 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {timelineRows.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-5 py-8 text-center text-gray-500">
+                    No projects yet
+                  </td>
+                </tr>
+              ) : (
+                timelineRows.map((row) => (
+                  <tr key={row.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-3">
+                        <span className="text-lg">{row.icon}</span>
+                        <span className="font-medium text-gray-900">{row.title}</span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 text-sm text-gray-600">{row.client}</td>
+                    <td className="px-5 py-4">
+                      <StatusBadge status={row.status} />
+                    </td>
+                    <td className="px-5 py-4 text-sm text-gray-600">{row.due ? new Date(row.due).toLocaleDateString('en-AU') : '—'}</td>
+                    <td className="px-5 py-4 text-sm font-medium text-gray-900">{formatCents(row.profit + (row.profit * 2))}</td>
+                    <td className="px-5 py-4 text-right">
+                      <button className="text-gray-400 hover:text-gray-600">
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                        </svg>
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Active orders timeline — live data */}

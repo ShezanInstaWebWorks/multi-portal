@@ -59,6 +59,20 @@ export default async function DirectProjectDetailPage({ params, searchParams }) 
   const revisionNote = project.status === "revision_requested"
     ? await getLatestRevisionNote(adminClient, project.id)
     : null;
+
+  const { data: siblingProjects } = await adminClient
+    .from("projects")
+    .select("id, status, services ( id, name, icon, slug )")
+    .eq("job_id", project.job_id)
+    .order("created_at", { ascending: true });
+  const siblings = {
+    items: (siblingProjects ?? []).map((p) => ({
+      id: p.id,
+      status: p.status,
+      service: p.services ?? null,
+    })),
+    baseHref: "/direct/projects",
+  };
   const { data: messages } = conversationId
     ? await adminClient.from("messages").select("*").eq("conversation_id", conversationId).order("created_at", { ascending: true }).limit(200)
     : { data: [] };
@@ -84,6 +98,7 @@ export default async function DirectProjectDetailPage({ params, searchParams }) 
             backLabel={`Back to order ${job.job_number}`}
             tabsSlot={<ProjectTabs />}
             revisionNote={revisionNote}
+            siblings={siblings}
           />
         )}
         {tab !== "overview" && (

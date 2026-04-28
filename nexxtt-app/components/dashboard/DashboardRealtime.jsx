@@ -13,8 +13,13 @@ import { createClient } from "@/lib/supabase/client";
 // + N projects.insert) collapses into one server round-trip.
 export function DashboardRealtime({ agencyId }) {
   const router = useRouter();
+  const routerRef = useRef(router);
+  routerRef.current = router;
   const timerRef = useRef(null);
 
+  // deps exclude `router` — including it caused the subscription to re-bind
+  // each render in Next 16 / React 19, which replayed buffered events and
+  // put router.refresh() in a loop.
   useEffect(() => {
     if (!agencyId) return;
 
@@ -22,7 +27,7 @@ export function DashboardRealtime({ agencyId }) {
     const scheduleRefresh = () => {
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => {
-        router.refresh();
+        routerRef.current.refresh();
       }, 400);
     };
 
@@ -51,7 +56,7 @@ export function DashboardRealtime({ agencyId }) {
       if (timerRef.current) clearTimeout(timerRef.current);
       supabase.removeChannel(channel);
     };
-  }, [agencyId, router]);
+  }, [agencyId]);
 
   return null;
 }

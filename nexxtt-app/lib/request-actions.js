@@ -9,21 +9,28 @@ export function availableActions({ request, viewerRole, viewerUserId }) {
   const tier = request.client_id ? "agency" : "direct";
   const isInitiator = request.initiator_user_id === viewerUserId;
   const clientInitiated = tier === "agency" && request.initiator_role === "agency_client";
-  const terminal = ["rejected", "cancelled", "converted"].includes(request.status);
+  const terminal = ["rejected", "rejected_by_agency", "cancelled", "converted", "accepted"].includes(request.status);
   if (terminal) return actions;
 
-  // Negotiation phase — counter / accept / reject / cancel
-  if (["pending_counterparty", "counter_offered"].includes(request.status)) {
-    if (isInitiator) {
-      actions.push("cancel");
-      if (request.status === "counter_offered") actions.push("accept");
-    } else {
-      // Counterparty can accept, counter, or reject.
-      // For client-initiated agency-tier requests, agency accepting routes the
-      // request through admin approval (for the delivery date) — handled in
-      // the /accept API via needsAdminApproval().
-      actions.push("accept", "counter", "reject");
-    }
+  // NEW WORKFLOW: Sequential approval
+  // 1. Agency client submits → pending_agency_review → Agency reviews
+  // 2. Agency accepts → pending_admin_approval → Admin reviews
+  // 3. Admin accepts → accepted → Can convert to job
+
+  // Agency partner reviews client-initiated requests
+  if (request.status === "pending_agency_review" && viewerRole === "agency") {
+    actions.push("accept", "counter", "reject");
+  }
+
+  // Initiator (client) can cancel while pending agency review
+  if (request.status === "pending_agency_review" && isInitiator) {
+    actions.push("cancel");
+  }
+
+  // Admin reviews after agency approves
+  if (request.status === "pending_admin_approval" && viewerRole === "admin") {
+    actions.push("admin_approve");
+    actions.push("convert");
   }
 
   // Initiator can cancel before admin approves
@@ -31,10 +38,23 @@ export function availableActions({ request, viewerRole, viewerUserId }) {
     actions.push("cancel");
   }
 
-  // Admin approves a client-initiated request that the client has accepted
-  if (request.status === "pending_admin_approval" && viewerRole === "admin") {
-    actions.push("admin_approve");
-    actions.push("convert");
+  // Legacy statuses - keep for backward compatibility
+  if (["pending_counterparty", "counter_offered", "pending_agency_review"].includes(request.status)) {
+    if (isInitiator) {
+      actions.push("cancel");
+      if (request.status === "counter_offered") {
+        actions.push("accept");
+        // Client can also counter back to agency
+        if (viewerRole === "agency_client") {
+          actions.push("counter");
+        }
+      }
+    } else if (request.status !== "pending_agency_review") {
+      // For non-pending_agency_review, show counter/reject to counterparty
+      const adminOnDirect = viewerRole === "admin" && tier === "direct";
+      if (!adminOnDirect) actions.push("accept");
+      actions.push("counter", "reject");
+    }
   }
 
   // Agency partner sends an accepted agency-initiated request on to admin

@@ -24,14 +24,19 @@ export default async function AgencyRequestsPage({ searchParams }) {
   const resolved = (await searchParams) ?? {};
   const selectedClientId = typeof resolved.client === "string" ? resolved.client : null;
   const thread = typeof resolved.thread === "string" ? resolved.thread : null; // "admin" → agency↔admin thread
+  const selectedTab = typeof resolved.tab === "string" ? resolved.tab : "active";
+  // Top-level view: "compose" = file a new request, "list" = manage existing
+  // ones. Defaults to list since that's where existing work lives.
+  const selectedView = resolved.view === "compose" ? "compose" : "list";
 
-  const [requestsRes, servicesRes, conversationsRes, adminThreadRes] = await Promise.all([
+  const [requestsRes, servicesRes, packagesRes, conversationsRes, adminThreadRes] = await Promise.all([
     ctx.supabase
       .from("project_requests")
       .select("*, clients ( id, business_name ), services ( id, name, icon )")
       .eq("agency_id", ctx.agencyId)
       .order("created_at", { ascending: false }),
-    ctx.supabase.from("services").select("id, name, icon, cost_price_cents, default_retail_cents").eq("is_active", true).order("sort_order"),
+    ctx.supabase.from("services").select("id, name, icon, slug, cost_price_cents, default_retail_cents, sla_days, rush_sla_days").eq("is_active", true).order("sort_order"),
+    ctx.supabase.from("service_packages").select("id, service_id, tier, name, description, cost_cents, retail_cents, features, delivery_days, is_popular, sort_order").eq("is_active", true).order("sort_order"),
     ctx.supabase
       .from("conversations")
       .select("id, client_id, last_message_at, last_message_preview, clients ( id, business_name )")
@@ -48,6 +53,7 @@ export default async function AgencyRequestsPage({ searchParams }) {
 
   const requests = requestsRes.data ?? [];
   const services = servicesRes.data ?? [];
+  const packages = packagesRes.data ?? [];
   const conversations = conversationsRes.data ?? [];
   let adminThread = adminThreadRes.data ?? null;
 
@@ -81,10 +87,51 @@ export default async function AgencyRequestsPage({ searchParams }) {
         .limit(200)
     : { data: [] };
 
-  // Filter requests to the active client, or show all if admin thread / none selected
-  const visibleRequests = (!isAdminThread && activeConversation?.client_id)
+  // Filter requests to the active client first, then by tab status. Tab buckets
+  // mirror what an agency cares about: who's waiting on them right now vs.
+  // what's already off their plate (admin owns approval, jobs already created,
+  // closed deals).
+  const STATUS_BUCKETS = {
+    needs_review: new Set(["pending_agency_review"]),
+    active:       new Set(["pending_counterparty", "counter_offered", "accepted", "sent_to_admin"]),
+    approval:     new Set(["pending_admin_approval"]),
+    converted:    new Set(["converted"]),
+    closed:       new Set(["rejected", "cancelled", "rejected_by_agency"]),
+  };
+  const clientFiltered = (!isAdminThread && activeConversation?.client_id)
     ? requests.filter((r) => r.client_id === activeConversation.client_id)
     : requests;
+  const counts = {
+    all:        clientFiltered.length,
+    needs_review: clientFiltered.filter((r) => STATUS_BUCKETS.needs_review.has(r.status)).length,
+    active:     clientFiltered.filter((r) => STATUS_BUCKETS.active.has(r.status)).length,
+    approval:   clientFiltered.filter((r) => STATUS_BUCKETS.approval.has(r.status)).length,
+    converted:  clientFiltered.filter((r) => STATUS_BUCKETS.converted.has(r.status)).length,
+    closed:     clientFiltered.filter((r) => STATUS_BUCKETS.closed.has(r.status)).length,
+  };
+  const tabKey = ["all","needs_review","active","approval","converted","closed"].includes(selectedTab) ? selectedTab : "needs_review";
+  const visibleRequests = tabKey === "all"
+    ? clientFiltered
+    : clientFiltered.filter((r) => STATUS_BUCKETS[tabKey].has(r.status));
+
+  // Helper to build a tab href that preserves current client/thread context
+  // AND the top-level view tab.
+  const tabHref = (key) => {
+    const params = new URLSearchParams();
+    params.set("view", "list");
+    params.set("tab", key);
+    if (isAdminThread) params.set("thread", "admin");
+    else if (activeConversation?.client_id) params.set("client", activeConversation.client_id);
+    return `/agency/requests?${params.toString()}`;
+  };
+  const viewHref = (view) => {
+    const params = new URLSearchParams();
+    params.set("view", view);
+    if (view === "list") params.set("tab", tabKey);
+    if (isAdminThread) params.set("thread", "admin");
+    else if (activeConversation?.client_id) params.set("client", activeConversation.client_id);
+    return `/agency/requests?${params.toString()}`;
+  };
 
   return (
     <>
@@ -167,33 +214,106 @@ export default async function AgencyRequestsPage({ searchParams }) {
               </div>
             ) : (
               <>
-                {activeConversation?.client_id && (
-                  <RequestForm
-                    services={services}
-                    defaultClientId={activeConversation.client_id}
-                    compact
-                  />
-                )}
-                {visibleRequests.length === 0 ? (
-                  <div className="text-sm text-muted bg-white border border-border rounded-[12px] p-5 text-center">
-                    {activeConversation
-                      ? `No requests yet from ${activeConversation.clients?.business_name ?? "this client"}.`
-                      : "No project requests yet."}
-                  </div>
-                ) : (
-                  visibleRequests.map((r) => (
-                    <div key={r.id}>
-                      <div className="text-[0.72rem] text-muted mb-1 pl-1">
-                        {r.clients?.business_name ?? "—"}
-                      </div>
-                      <RequestCard
-                        request={r}
-                        viewerRole="agency"
-                        actions={availableActions({ request: r, viewerRole: "agency", viewerUserId: ctx.user.id })}
-                        services={services}
-                      />
+                {/* Top-level view switcher: Compose vs Manage */}
+                <div className="flex gap-1 p-1 rounded-[12px] bg-off border border-border self-start">
+                  <a
+                    href={viewHref("compose")}
+                    className={`px-3.5 py-1.5 rounded-[10px] text-[0.82rem] font-semibold transition-colors ${
+                      selectedView === "compose"
+                        ? "bg-white text-dark shadow-[0_1px_3px_rgba(11,31,58,0.12)]"
+                        : "text-muted hover:text-dark"
+                    }`}
+                  >
+                    + New request
+                  </a>
+                  <a
+                    href={viewHref("list")}
+                    className={`px-3.5 py-1.5 rounded-[10px] text-[0.82rem] font-semibold transition-colors ${
+                      selectedView === "list"
+                        ? "bg-white text-dark shadow-[0_1px_3px_rgba(11,31,58,0.12)]"
+                        : "text-muted hover:text-dark"
+                    }`}
+                  >
+                    Requests
+                    <span className={`ml-1.5 ${selectedView === "list" ? "opacity-70" : "opacity-50"}`}>
+                      ({counts.all})
+                    </span>
+                  </a>
+                </div>
+
+                {selectedView === "compose" ? (
+                  activeConversation?.client_id ? (
+                    <RequestForm
+                      services={services}
+                      packages={packages}
+                      showCost
+                      defaultClientId={activeConversation.client_id}
+                      compact
+                    />
+                  ) : (
+                    <div className="text-sm text-muted bg-white border border-border rounded-[12px] p-5 text-center">
+                      Pick a client on the left to file a new request.
                     </div>
-                  ))
+                  )
+                ) : (
+                  <>
+                    <div className="flex gap-2 flex-wrap">
+                      {[
+                        { key: "needs_review", label: "Needs Your Review" },
+                        { key: "active",     label: "Active" },
+                        { key: "approval",   label: "Awaiting admin approval" },
+                        { key: "converted", label: "Converted to job" },
+                        { key: "closed",    label: "Closed" },
+                        { key: "all",       label: "All" },
+                      ].map((t) => {
+                        const active = tabKey === t.key;
+                        return (
+                          <a
+                            key={t.key}
+                            href={tabHref(t.key)}
+                            className={`px-3 py-1.5 rounded-full text-[0.78rem] font-semibold border transition-colors ${
+                              active
+                                ? "bg-teal text-white border-teal shadow-[0_2px_8px_rgba(0,184,169,0.25)]"
+                                : "bg-white text-muted border-border hover:border-teal hover:text-teal"
+                            }`}
+                          >
+                            {t.label}
+                            <span className={`ml-1.5 ${active ? "opacity-80" : "opacity-60"}`}>
+                              ({counts[t.key] ?? 0})
+                            </span>
+                          </a>
+                        );
+                      })}
+                    </div>
+
+                    {visibleRequests.length === 0 ? (
+                      <div className="text-sm text-muted bg-white border border-border rounded-[12px] p-5 text-center">
+                        {tabKey === "approval"
+                          ? "Nothing waiting on admin right now."
+                          : tabKey === "converted"
+                            ? "No jobs converted yet."
+                            : tabKey === "closed"
+                              ? "No closed requests."
+                              : (activeConversation
+                                  ? `No active requests with ${activeConversation.clients?.business_name ?? "this client"}.`
+                                  : "No project requests yet.")}
+                      </div>
+                    ) : (
+                      visibleRequests.map((r) => (
+                        <div key={r.id}>
+                          <div className="text-[0.72rem] text-muted mb-1 pl-1">
+                            {r.clients?.business_name ?? "—"}
+                          </div>
+                          <RequestCard
+                            request={r}
+                            viewerRole="agency"
+                            actions={availableActions({ request: r, viewerRole: "agency", viewerUserId: ctx.user.id })}
+                            services={services}
+                          />
+                        </div>
+                      ))
+                    )}
+                  </>
                 )}
               </>
             )}

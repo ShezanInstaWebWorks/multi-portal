@@ -21,13 +21,14 @@ export default async function DirectRequestsPage() {
     .maybeSingle();
   if (profile?.role !== "direct_client") redirect("/login");
 
-  const [requestsRes, servicesRes, conversationRes] = await Promise.all([
+  const [requestsRes, servicesRes, packagesRes, conversationRes] = await Promise.all([
     admin
       .from("project_requests")
       .select("*, services ( id, name, icon )")
       .eq("direct_client_user_id", user.id)
       .order("created_at", { ascending: false }),
-    admin.from("services").select("id, name, icon, cost_price_cents, default_retail_cents").eq("is_active", true).order("sort_order"),
+    admin.from("services").select("id, name, icon, slug, cost_price_cents, default_retail_cents, sla_days, rush_sla_days").eq("is_active", true).order("sort_order"),
+    admin.from("service_packages").select("id, service_id, tier, name, description, cost_cents, retail_cents, features, delivery_days, is_popular, sort_order").eq("is_active", true).order("sort_order"),
     admin
       .from("conversations")
       .select("id")
@@ -38,6 +39,7 @@ export default async function DirectRequestsPage() {
 
   const requests = requestsRes.data ?? [];
   const services = servicesRes.data ?? [];
+  const packages = packagesRes.data ?? [];
   let conversationId = conversationRes.data?.id ?? null;
 
   // Lazy-create the thread so chat works before the first request.
@@ -72,7 +74,7 @@ export default async function DirectRequestsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-5 items-start">
         <div className="flex flex-col gap-4">
-          <RequestForm services={services} />
+          <RequestForm services={services} packages={packages} showCost={false} />
 
           <div className="flex flex-col gap-3">
             {requests.length === 0 ? (

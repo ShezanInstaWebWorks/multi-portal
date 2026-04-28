@@ -12,13 +12,18 @@ import { createClient } from "@/lib/supabase/client";
 // needing a manual reload.
 export function RequestsRealtime() {
   const router = useRouter();
+  const routerRef = useRef(router);
+  routerRef.current = router;
   const timerRef = useRef(null);
 
+  // NOTE: deps are intentionally empty. Including `router` caused the
+  // subscription to tear down + re-subscribe on every render; buffered
+  // postgres_changes events then fired router.refresh() in a loop.
   useEffect(() => {
     const supabase = createClient();
     const bump = () => {
       if (timerRef.current) clearTimeout(timerRef.current);
-      timerRef.current = setTimeout(() => { router.refresh(); }, 350);
+      timerRef.current = setTimeout(() => { routerRef.current.refresh(); }, 350);
     };
     const channel = supabase
       .channel("requests-and-chat-feed")
@@ -30,7 +35,7 @@ export function RequestsRealtime() {
       if (timerRef.current) clearTimeout(timerRef.current);
       supabase.removeChannel(channel);
     };
-  }, [router]);
+  }, []);
 
   return null;
 }

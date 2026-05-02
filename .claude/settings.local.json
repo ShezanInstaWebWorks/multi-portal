@@ -1,19 +1,23 @@
 {
-  "env": {
-    "ANTHROPIC_BASE_URL": "https://api.minimax.io/anthropic",
-    "ANTHROPIC_AUTH_TOKEN": "sk-cp-OO5I5POjMfxRpOiLD8bcWqWVScN1KOOwASlrm8-eKmwMNTKDnblvpbSCF340emEshf_0frAp7itatyQC0GMU2OtKa4t7dN546O3zWbv2YN9BH0I3T8xDX3U",
-    "ANTHROPIC_MODEL": "MiniMax-M2",
-    "ANTHROPIC_DEFAULT_SONNET_MODEL": "MiniMax-M2",
-    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "MiniMax-M2",
-    "API_TIMEOUT_MS": "600000",
-    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1"
-  },
   "permissions": {
     "allow": [
-      "Skill(update-config)",
-      "Skill(update-config:*)",
-      "mcp__supabase__list_projects"
-    ],
-    "deny": []
+      "Bash(cmd /c \"cd /d D:\\\\Extension\\\\project-management-shezan && npx vite --port 3000\")",
+      "Bash(cmd /c \"cd D:\\\\Extension\\\\project-management-shezan && npx --yes vite --port 3000 2>&1\")",
+      "Bash(cmd /c \"D: && cd D:\\\\Extension\\\\project-management-shezan && node node_modules\\\\vite\\\\bin\\\\vite.js --port 3000\")",
+      "Bash(node node_modules/vite/bin/vite.js --port 3000)",
+      "Bash(curl -s http://localhost:3000)",
+      "Bash(npx next:*)",
+      "Bash(taskkill /F /IM node.exe)",
+      "Bash(node node_modules/next/dist/bin/next dev --port 3001)",
+      "Bash(cmd /c \"netstat -ano | findstr :3001\")",
+      "Bash(node node_modules/next/dist/bin/next dev --port 3002)",
+      "Bash(cmd /c \"rd /s /q \"\"d:\\\\Extension\\\\project-management-shezan\\\\.next\"\"\")",
+      "Bash(powershell -Command \"Get-Process -Name node -ErrorAction SilentlyContinue | Select-Object Id, CPU, WorkingSet\")",
+      "Bash(node node_modules/next/dist/bin/next dev --turbopack --port 3004)",
+      "Bash(find d:/Extension/project-management-shezan -maxdepth 2 -name *.env* -o -name server.js -o -name index.js)",
+      "mcp__supabase__list_projects",
+      "mcp__supabase__list_tables",
+      "mcp__supabase__execute_sql"
+    ]
   }
 }

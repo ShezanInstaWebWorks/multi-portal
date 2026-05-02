@@ -16,6 +16,8 @@ export function availableActions({ request, viewerRole, viewerUserId }) {
   // 1. Agency client submits → pending_agency_review → Agency reviews
   // 2. Agency accepts → pending_admin_approval → Admin reviews
   // 3. Admin accepts → accepted → Can convert to job
+  // 4. Agency sets project in_progress → submits to in_review when done
+  // 5. Agency client approves or requests revisions
 
   // Agency partner reviews client-initiated requests
   if (request.status === "pending_agency_review" && viewerRole === "agency") {

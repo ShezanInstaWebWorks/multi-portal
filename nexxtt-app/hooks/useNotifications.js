@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 /**
@@ -12,6 +12,7 @@ import { createClient } from "@/lib/supabase/client";
 export function useNotifications(userId) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const channelRef = useRef(null);
 
   useEffect(() => {
     if (!userId) {
@@ -19,10 +20,15 @@ export function useNotifications(userId) {
       setLoading(false);
       return;
     }
-    const supabase = createClient();
-    let channel;
 
-    (async () => {
+    // Unique name per mount so Supabase never reuses a channel that already
+    // called .subscribe(), which would trigger the "cannot add postgres_changes
+    // after subscribe()" error in React Strict Mode double-invoke.
+    const channelName = `notifications:${userId}:${Date.now()}`;
+    const supabase = createClient();
+    let cancelled = false;
+
+    async function fetchAndSubscribe() {
       setLoading(true);
       const { data } = await supabase
         .from("notifications")
@@ -30,11 +36,15 @@ export function useNotifications(userId) {
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
         .limit(20);
+
+      // If cleanup ran before the fetch resolved, bail out — don't subscribe.
+      if (cancelled) return;
+
       setItems(data ?? []);
       setLoading(false);
 
-      channel = supabase
-        .channel(`notifications:${userId}`)
+      channelRef.current = supabase
+        .channel(channelName)
         .on(
           "postgres_changes",
           { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
@@ -55,12 +65,15 @@ export function useNotifications(userId) {
           }
         )
         .subscribe();
-    })();
+    }
+
+    fetchAndSubscribe();
 
     return () => {
-      if (channel) {
-        const supabase = createClient();
-        supabase.removeChannel(channel);
+      cancelled = true;
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
       }
     };
   }, [userId]);

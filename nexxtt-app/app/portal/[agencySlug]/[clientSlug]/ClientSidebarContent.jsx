@@ -13,8 +13,9 @@ export function ClientSidebarContent({ brand, userName, firstName, agencySlug, c
 
   const navItems = [
     { href: `/portal/${agencySlug}/${clientSlug}`, label: "Dashboard", icon: "🏠" },
-    { href: `/portal/${agencySlug}/${clientSlug}/projects`, label: "Projects", icon: "📁" },
-    { href: `/portal/${agencySlug}/${clientSlug}/requests`, label: "Requests", icon: "💬" },
+    { href: `/portal/${agencySlug}/${clientSlug}/projects`, label: "My Projects", icon: "📁" },
+    { href: `/portal/${agencySlug}/${clientSlug}/requests`, label: "Messages", icon: "💬" },
+    { href: `/portal/${agencySlug}/${clientSlug}/settings`, label: "Settings", icon: "⚙️" },
   ];
 
   return (

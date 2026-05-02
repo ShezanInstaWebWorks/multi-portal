@@ -9,6 +9,7 @@ import { DisputePanel } from "./DisputePanel";
 import { ClientActionPanel } from "./ClientActionPanel";
 import { DeliverablesPanel } from "./DeliverablesPanel";
 import { StartWorkPanel } from "./StartWorkPanel";
+import { SubmitForReviewPanel } from "./SubmitForReviewPanel";
 
 /**
  * Shared detail view for a single project.
@@ -29,14 +30,37 @@ export function ProjectDetailView({
   const pct = progressPct(service?.slug, project.status);
   const profit = (project.retail_price_cents ?? 0) - (project.cost_price_cents ?? 0);
   const showCost = viewer === "agency";
-  // agency_client and direct_client both sign off on their own work.
+
+  // agency_client and direct_client sign off when project is in_review.
   const canClientAct =
     (viewer === "agency_client" || viewer === "direct_client") &&
     project.status === "in_review";
+
   // Agency/admin can mark a brief_pending project as in_progress.
   const canStartWork =
     (viewer === "agency" || viewerIsAdmin) &&
     project.status === "brief_pending";
+
+  // Admin submits in_progress → agency_review (for agency to review before client).
+  const canAdminSubmitToAgency = viewerIsAdmin && project.status === "in_progress";
+
+  // Agency submits agency_review → in_review (forwards to client after reviewing admin's work).
+  const canAgencyForwardToClient =
+    viewer === "agency" && !viewerIsAdmin && project.status === "agency_review";
+
+  // Agency submits in_progress → in_review directly (agency-only workflow, no admin step).
+  const canAgencyDirectSubmit =
+    viewer === "agency" && !viewerIsAdmin && project.status === "in_progress";
+
+  const canSubmitForReview =
+    canAdminSubmitToAgency || canAgencyForwardToClient || canAgencyDirectSubmit;
+
+  // Derive mode for SubmitForReviewPanel context-aware copy.
+  const submitMode = canAdminSubmitToAgency
+    ? "to_agency"
+    : canAgencyForwardToClient
+    ? "to_client"
+    : "direct";
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-5 lg:py-7 pb-20 lg:pb-8 max-w-[1100px] mx-auto w-full">
@@ -179,6 +203,11 @@ export function ProjectDetailView({
           defaultStartDate={project.start_date ?? null}
           defaultDueDate={project.due_date ?? null}
         />
+      )}
+
+      {/* Submit for review — mode determines who the audience is */}
+      {canSubmitForReview && (
+        <SubmitForReviewPanel projectId={project.id} hasFiles={files?.length > 0} mode={submitMode} />
       )}
 
       {/* Client actions — real wiring, client_client or direct_client only */}
@@ -328,7 +357,8 @@ function SiblingProjectSwitcher({ items, baseHref, activeId }) {
 const STATUS_SHORT = {
   brief_pending:      "Brief",
   in_progress:        "Active",
-  in_review:          "Review",
+  agency_review:      "Agcy Review",
+  in_review:          "Client Review",
   revision_requested: "Revisions",
   delivered:          "Delivered",
   approved:           "Approved",
@@ -338,6 +368,7 @@ const STATUS_SHORT = {
 const STATUS_COLOR = {
   brief_pending:      "var(--color-navy)",
   in_progress:        "var(--color-teal)",
+  agency_review:      "var(--color-blue)",
   in_review:          "var(--color-amber)",
   revision_requested: "var(--color-blue)",
   delivered:          "var(--color-green)",

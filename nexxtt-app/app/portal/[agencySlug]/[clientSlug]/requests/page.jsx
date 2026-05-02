@@ -12,7 +12,6 @@ export default async function ClientPortalRequestsPage({ params, searchParams })
   const { agencySlug, clientSlug } = await params;
   const sp = (await searchParams) ?? {};
   const selectedView = sp.view === "compose" ? "compose" : "list";
-  const selectedTab = typeof sp.tab === "string" ? sp.tab : "active";
   const { user, brand, client, profile, admin } = await resolvePortalContext(agencySlug, clientSlug);
 
   if (!user) redirect("/login");
@@ -65,44 +64,25 @@ export default async function ClientPortalRequestsPage({ params, searchParams })
         .limit(200)
     : { data: [] };
 
-  // Bucket requests by status for the sub-tabs in the list view.
-  const STATUS_BUCKETS = {
-    awaiting_agency: new Set(["pending_agency_review"]),
-    active:    new Set(["pending_counterparty", "counter_offered", "accepted", "sent_to_admin", "pending_admin_approval"]),
-    converted: new Set(["converted"]),
-    closed:    new Set(["rejected", "rejected_by_agency", "cancelled"]),
-  };
-  const counts = {
-    all:        requests.length,
-    awaiting_agency: requests.filter((r) => STATUS_BUCKETS.awaiting_agency.has(r.status)).length,
-    active:    requests.filter((r) => STATUS_BUCKETS.active.has(r.status)).length,
-    converted: requests.filter((r) => STATUS_BUCKETS.converted.has(r.status)).length,
-    closed:    requests.filter((r) => STATUS_BUCKETS.closed.has(r.status)).length,
-  };
-  const tabKey = ["all", "awaiting_agency", "active", "converted", "closed"].includes(selectedTab) ? selectedTab : "awaiting_agency";
-  const visibleRequests = tabKey === "all"
-    ? requests
-    : requests.filter((r) => STATUS_BUCKETS[tabKey].has(r.status));
-
   const basePath = `/portal/${agencySlug}/${clientSlug}/requests`;
   const viewHref = (view) => {
     const params = new URLSearchParams();
     params.set("view", view);
-    if (view === "list") params.set("tab", tabKey);
     return `${basePath}?${params.toString()}`;
   };
-  const tabHref = (key) => `${basePath}?view=list&tab=${key}`;
-  const canCompose = viewerRole === "agency_client";
+  const canCompose = viewerRole === "agency";
 
   return (
     <main className="flex-1 px-4 sm:px-6 lg:px-8 py-5 lg:py-7 pb-20 lg:pb-8 max-w-[1100px] mx-auto w-full">
       <RequestsRealtime />
 
       <h1 className="font-display text-[1.4rem] font-extrabold text-dark mb-1">
-        Project requests
+        {viewerRole === "agency_client" ? "Messages" : "Project requests"}
       </h1>
       <p className="text-sm text-muted mb-5">
-        File a new project, review what {brand.display_name ?? "your agency"} has proposed, and chat live.
+        {viewerRole === "agency_client"
+          ? `Chat directly with ${brand.display_name ?? "your agency"} and track project updates.`
+          : `File a new project, review what ${brand.display_name ?? "your agency"} has proposed, and chat live.`}
       </p>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-5 items-start">
@@ -130,7 +110,7 @@ export default async function ClientPortalRequestsPage({ params, searchParams })
               >
                 Requests
                 <span className={`ml-1.5 ${selectedView === "list" ? "opacity-70" : "opacity-50"}`}>
-                  ({counts.all})
+                  ({requests.length})
                 </span>
               </a>
             </div>
@@ -140,46 +120,14 @@ export default async function ClientPortalRequestsPage({ params, searchParams })
             <RequestForm services={services} packages={packages} showCost={false} />
           ) : (
             <>
-              <div className="flex gap-2 flex-wrap">
-                {[
-                  { key: "awaiting_agency", label: "Awaiting Agency" },
-                  { key: "active",         label: "Active" },
-                  { key: "converted",      label: "Converted to job" },
-                  { key: "closed",         label: "Closed" },
-                  { key: "all",            label: "All" },
-                ].map((t) => {
-                  const active = tabKey === t.key;
-                  return (
-                    <a
-                      key={t.key}
-                      href={tabHref(t.key)}
-                      className={`px-3 py-1.5 rounded-full text-[0.78rem] font-semibold border transition-colors ${
-                        active
-                          ? "bg-teal text-white border-teal shadow-[0_2px_8px_rgba(0,184,169,0.25)]"
-                          : "bg-white text-muted border-border hover:border-teal hover:text-teal"
-                      }`}
-                    >
-                      {t.label}
-                      <span className={`ml-1.5 ${active ? "opacity-80" : "opacity-60"}`}>
-                        ({counts[t.key] ?? 0})
-                      </span>
-                    </a>
-                  );
-                })}
-              </div>
-
-              {visibleRequests.length === 0 ? (
+              {requests.length === 0 ? (
                 <div className="text-sm text-muted bg-white border border-border rounded-[12px] p-5 text-center">
-                  {tabKey === "converted"
-                    ? "No converted jobs yet."
-                    : tabKey === "closed"
-                      ? "No closed requests."
-                      : canCompose
-                        ? "No requests yet — switch to “New request” to file your first one."
-                        : "No requests yet."}
+                  {canCompose
+                    ? "No requests yet — switch to \"New request\" to file your first one."
+                    : "No requests yet."}
                 </div>
               ) : (
-                visibleRequests.map((r) => (
+                requests.map((r) => (
                   <RequestCard
                     key={r.id}
                     request={r}

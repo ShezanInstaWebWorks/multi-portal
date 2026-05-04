@@ -23,7 +23,7 @@ export default async function NewOrderPage() {
     .single();
 
   // Services catalog (public-read policy) + agency balance + agency's clients.
-  const [servicesRes, agencyRes, clientsRes, configRes] = await Promise.all([
+  const [servicesRes, agencyRes, clientsRes, configRes, packagesRes] = await Promise.all([
     supabase
       .from("services")
       .select("id, name, slug, icon, cost_price_cents, default_retail_cents, sla_days, rush_sla_days")
@@ -40,6 +40,11 @@ export default async function NewOrderPage() {
           .order("business_name", { ascending: true })
       : Promise.resolve({ data: [] }),
     supabase.from("platform_config").select("rush_surcharge").limit(1).single(),
+    supabase
+      .from("service_packages")
+      .select("id, service_id, tier, name, description, cost_cents, retail_cents, features, delivery_days, is_popular, sort_order")
+      .eq("is_active", true)
+      .order("sort_order"),
   ]);
 
   return (
@@ -50,6 +55,7 @@ export default async function NewOrderPage() {
       <main id="main-content" className="flex-1">
         <OrderWizard
           services={servicesRes.data ?? []}
+          packages={packagesRes.data ?? []}
           clients={clientsRes.data ?? []}
           agency={agencyRes.data ?? null}
           rushSurcharge={Number(configRes.data?.rush_surcharge ?? 0.5)}

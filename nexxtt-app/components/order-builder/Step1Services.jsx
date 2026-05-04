@@ -2,20 +2,15 @@
 
 import { formatCents, applyRush, retailFromCost } from "@/lib/money";
 
-export function Step1Services({ services, draft, setDraft, rushSurcharge }) {
+export function Step1Services({ services, draft, setDraft, selectService, rushSurcharge }) {
   function toggle(id) {
-    setDraft((d) => {
-      const next = { ...d.selections };
-      if (next[id]) delete next[id];
-      else next[id] = { rush: false };
-      return { ...d, selections: next };
-    });
+    selectService(id, draft.selections[id]?.rush ?? false);
   }
 
   function setRush(id, rush) {
     setDraft((d) => ({
       ...d,
-      selections: { ...d.selections, [id]: { rush } },
+      selections: { ...d.selections, [id]: { ...d.selections[id], rush } },
     }));
   }
 

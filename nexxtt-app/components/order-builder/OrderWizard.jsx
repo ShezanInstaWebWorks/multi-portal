@@ -1,106 +1,180 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Check } from "lucide-react";
-import { Step1Services } from "./Step1Services";
-import { Step2Brief } from "./Step2Brief";
-import { Step3Client } from "./Step3Client";
-import { Step4Confirm } from "./Step4Confirm";
-import { formatCents, retailFromCost, applyRush } from "@/lib/money";
+import { Step1BuildOrder } from "./Step1BuildOrder";
+import { Step2SetPricing } from "./Step2SetPricing";
+import { Step3ConfirmPay } from "./Step3ConfirmPay";
+import { formatCents } from "@/lib/money";
 
 const STEPS = [
-  { n: 1, label: "Services" },
-  { n: 2, label: "Brief" },
-  { n: 3, label: "Client" },
-  { n: 4, label: "Confirm" },
+  { n: 1, label: "Build Order" },
+  { n: 2, label: "Set Pricing" },
+  { n: 3, label: "Confirm & Pay" },
 ];
 
-export function OrderWizard({ services, clients, agency, rushSurcharge }) {
+export function OrderWizard({ services, packages, clients, agency, rushSurcharge }) {
   const router = useRouter();
   const [step, setStep] = useState(1);
-  const [draft, setDraft] = useState({
-    // selections[serviceId] = { rush: bool }
-    selections: {},
-    // briefs[serviceId] = { businessName, goals, referenceUrls }
-    briefs: {},
-    clientId: null,
-  });
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
 
-  const selectedServices = useMemo(
-    () =>
-      services
-        .filter((s) => draft.selections[s.id])
-        .map((s) => {
-          const sel = draft.selections[s.id];
-          const cost = sel.rush
-            ? applyRush(s.cost_price_cents, rushSurcharge)
-            : s.cost_price_cents;
-          const retail = retailFromCost(cost);
-          return { ...s, rush: !!sel.rush, cost_cents: cost, retail_cents: retail };
-        }),
-    [services, draft.selections, rushSurcharge]
-  );
+  // Core state
+  const [clientId, setClientId] = useState(null);
+  // selections[serviceSlug] = { packageId, rush, addons: {} }
+  const [selections, setSelections] = useState({});
+  // sellPrices[serviceSlug] = cents (editable in step 2)
+  const [sellPrices, setSellPrices] = useState({});
+  // briefs[serviceSlug] = { ... }
+  const [briefs, setBriefs] = useState({});
+  // paymentMethod: 'balance' | 'card'
+  const [paymentMethod, setPaymentMethod] = useState("balance");
+  const [termsAccepted, setTermsAccepted] = useState(true);
+
+  // Group packages by service slug
+  const packagesByService = useMemo(() => {
+    const map = {};
+    for (const p of packages) {
+      const svc = services.find((s) => s.id === p.service_id);
+      if (svc) {
+        if (!map[svc.slug]) map[svc.slug] = [];
+        map[svc.slug].push(p);
+      }
+    }
+    return map;
+  }, [services, packages]);
+
+  // Selected items with full data
+  const selectedItems = useMemo(() => {
+    return Object.entries(selections)
+      .map(([slug, sel]) => {
+        const svc = services.find((s) => s.slug === slug);
+        if (!svc) return null;
+        const pkg = packages.find((p) => p.id === sel.packageId);
+        if (!pkg) return null;
+        const cost = sel.rush
+          ? Math.round(pkg.cost_cents * (1 + rushSurcharge))
+          : pkg.cost_cents;
+        const sell = sellPrices[slug] ?? pkg.retail_cents;
+        return {
+          slug,
+          serviceId: svc.id,
+          serviceName: svc.name,
+          icon: svc.icon,
+          packageId: pkg.id,
+          packageName: pkg.name,
+          tier: pkg.tier,
+          deliveryDays: pkg.delivery_days,
+          features: pkg.features ?? [],
+          cost_cents: cost,
+          sell_cents: sell,
+          profit_cents: sell - cost,
+          rush: sel.rush,
+          addons: sel.addons ?? {},
+        };
+      })
+      .filter(Boolean);
+  }, [selections, sellPrices, services, packages, rushSurcharge]);
 
   const totals = useMemo(() => {
-    const cost = selectedServices.reduce((a, s) => a + s.cost_cents, 0);
-    const retail = selectedServices.reduce((a, s) => a + s.retail_cents, 0);
-    return { cost, retail, profit: retail - cost };
-  }, [selectedServices]);
+    const cost = selectedItems.reduce((a, s) => a + s.cost_cents, 0);
+    const sell = selectedItems.reduce((a, s) => a + s.sell_cents, 0);
+    return { cost, sell, profit: sell - cost };
+  }, [selectedItems]);
+
+  const selectPackage = useCallback((slug, packageId) => {
+    setSelections((prev) => {
+      const next = { ...prev };
+      if (next[slug]?.packageId === packageId) {
+        delete next[slug];
+      } else {
+        next[slug] = { ...(next[slug] || {}), packageId };
+      }
+      return next;
+    });
+  }, []);
+
+  const toggleRush = useCallback((slug) => {
+    setSelections((prev) => ({
+      ...prev,
+      [slug]: { ...prev[slug], rush: !prev[slug]?.rush },
+    }));
+  }, []);
+
+  const updateSellPrice = useCallback((slug, cents) => {
+    setSellPrices((prev) => ({ ...prev, [slug]: cents }));
+  }, []);
 
   const canAdvance = {
-    1: selectedServices.length > 0,
-    2: selectedServices.every(
-      (s) => (draft.briefs[s.id]?.businessName || "").trim().length >= 2
-    ),
-    3: !!draft.clientId,
-    4: true,
+    1: selectedItems.length > 0 && !!clientId,
+    2: true,
+    3: termsAccepted,
   }[step];
 
   async function handleSubmit() {
+    if (!canAdvance) return;
     setSubmitting(true);
     setSubmitError(null);
 
     const payload = {
-      clientId: draft.clientId,
-      items: selectedServices.map((s) => ({
-        serviceId: s.id,
+      clientId,
+      items: selectedItems.map((s) => ({
+        serviceId: s.serviceId,
+        packageId: s.packageId,
         rush: s.rush,
         cost_cents: s.cost_cents,
-        retail_cents: s.retail_cents,
-        brief: draft.briefs[s.id] ?? {},
+        retail_cents: s.sell_cents,
+        brief: briefs[s.slug] ?? {},
       })),
     };
 
-    const res = await fetch("/api/jobs", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const body = await res.json().catch(() => ({}));
+    try {
+      const res = await fetch("/api/jobs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const body = await res.json().catch(() => ({}));
 
-    if (!res.ok) {
+      if (!res.ok) {
+        setSubmitting(false);
+        setSubmitError(body.error ?? `Request failed (${res.status})`);
+        return;
+      }
+
+      router.push(`/agency/orders/${body.job.id}`);
+      router.refresh();
+    } catch {
       setSubmitting(false);
-      setSubmitError(body.error ?? `Request failed (${res.status})`);
-      return;
+      setSubmitError("Network error. Please try again.");
     }
-
-    router.push(`/agency/orders/${body.job.id}`);
-    router.refresh();
   }
 
   const stepProps = {
     services,
+    packages,
+    packagesByService,
     clients,
     agency,
     rushSurcharge,
-    draft,
-    setDraft,
-    selectedServices,
+    clientId,
+    setClientId,
+    selections,
+    selectPackage,
+    toggleRush,
+    selectedItems,
     totals,
+    sellPrices,
+    updateSellPrice,
+    briefs,
+    setBriefs,
+    paymentMethod,
+    setPaymentMethod,
+    termsAccepted,
+    setTermsAccepted,
+    submitError,
   };
 
   return (
@@ -130,9 +204,8 @@ export function OrderWizard({ services, clients, agency, rushSurcharge }) {
 
       {/* Steps */}
       <div className="flex items-end gap-0 mb-8 flex-wrap">
-        {STEPS.map((s, i) => {
-          const state =
-            step === s.n ? "active" : step > s.n ? "done" : "pending";
+        {STEPS.map((s) => {
+          const state = step === s.n ? "active" : step > s.n ? "done" : "pending";
           return (
             <div
               key={s.n}
@@ -178,16 +251,15 @@ export function OrderWizard({ services, clients, agency, rushSurcharge }) {
 
       {/* Step content */}
       <div className="mb-8">
-        {step === 1 && <Step1Services {...stepProps} />}
-        {step === 2 && <Step2Brief {...stepProps} />}
-        {step === 3 && <Step3Client {...stepProps} />}
-        {step === 4 && <Step4Confirm {...stepProps} error={submitError} />}
+        {step === 1 && <Step1BuildOrder {...stepProps} />}
+        {step === 2 && <Step2SetPricing {...stepProps} />}
+        {step === 3 && <Step3ConfirmPay {...stepProps} />}
       </div>
 
       {/* Nav */}
       <div className="flex items-center justify-between gap-3 flex-wrap sticky bottom-4 lg:static">
         <div className="text-sm text-muted">
-          {selectedServices.length > 0 && (
+          {selectedItems.length > 0 && (
             <>
               Total cost{" "}
               <span className="font-bold text-dark">
@@ -209,7 +281,7 @@ export function OrderWizard({ services, clients, agency, rushSurcharge }) {
               Back
             </button>
           )}
-          {step < 4 && (
+          {step < 3 && (
             <button
               onClick={() => setStep(step + 1)}
               disabled={!canAdvance}
@@ -219,20 +291,20 @@ export function OrderWizard({ services, clients, agency, rushSurcharge }) {
                 boxShadow: "0 2px 10px rgba(0,184,169,0.25)",
               }}
             >
-              Continue →
+              {step === 1 ? "Set Pricing →" : "Continue to Payment →"}
             </button>
           )}
-          {step === 4 && (
+          {step === 3 && (
             <button
               onClick={handleSubmit}
-              disabled={submitting}
+              disabled={!canAdvance || submitting}
               className="px-5 py-2.5 rounded-[10px] text-sm font-extrabold text-white transition-all disabled:opacity-60 disabled:cursor-not-allowed hover:-translate-y-px"
               style={{
                 background: "var(--color-teal)",
                 boxShadow: "0 2px 10px rgba(0,184,169,0.25)",
               }}
             >
-              {submitting ? "Placing order…" : "Place order →"}
+              {submitting ? "Placing order…" : `Place Order · Pay ${formatCents(totals.cost)}`}
             </button>
           )}
         </div>

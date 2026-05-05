@@ -29,7 +29,10 @@ export async function POST(req) {
     return Response.json({ error: "Invalid JSON", code: "BAD_JSON" }, { status: 400 });
   }
 
-  const { clientId, items } = payload ?? {};
+  const { clientId, items, attachments } = payload ?? {};
+  const orderAttachments = Array.isArray(attachments)
+    ? attachments.filter((a) => a?.path && a?.name)
+    : [];
   if (!clientId || !Array.isArray(items) || items.length === 0) {
     return Response.json(
       { error: "clientId and at least one item are required", code: "VALIDATION" },
@@ -128,7 +131,7 @@ export async function POST(req) {
     return Response.json({ error: jnErr.message, code: "JOB_NUMBER_ERROR" }, { status: 500 });
   }
 
-  // 3. Insert job
+  // 3. Insert job — starts in pending_admin_approval until admin confirms
   const isRushOverall = pricedItems.some((p) => p.rush);
   const { data: job, error: jobErr } = await admin
     .from("jobs")
@@ -137,7 +140,7 @@ export async function POST(req) {
       agency_id: agencyId,
       client_id: clientId,
       placed_by: user.id,
-      status: "brief_pending",
+      status: "pending_admin_approval",
       is_rush: isRushOverall,
       total_cost_cents: totalCost,
       total_retail_cents: totalRetail,
@@ -151,11 +154,11 @@ export async function POST(req) {
     return Response.json({ error: jobErr.message, code: "JOB_INSERT_ERROR" }, { status: 500 });
   }
 
-  // 4. Insert projects + briefs
+  // 4. Insert projects + briefs — held at pending_admin_approval until admin confirms
   const projectRows = pricedItems.map((p) => ({
     job_id: job.id,
     service_id: p.serviceId,
-    status: "brief_pending",
+    status: "pending_admin_approval",
     cost_price_cents: p.cost_cents,
     retail_price_cents: p.retail_cents,
     is_rush: p.rush,
@@ -173,12 +176,16 @@ export async function POST(req) {
 
   const briefRows = projects.map((proj) => {
     const item = pricedItems.find((p) => p.serviceId === proj.service_id);
-    const svc = services.find((s) => s.id === proj.service_id);
     const slug = SLUG_BY_ID[proj.service_id] ?? "service";
     return {
       project_id: proj.id,
       service_slug: slug,
-      data: item.brief ?? {},
+      // Merge order-level attachments into each project's brief so admin
+      // sees the reference files when reviewing the project detail.
+      data: {
+        ...(item.brief ?? {}),
+        ...(orderAttachments.length > 0 ? { _attachments: orderAttachments } : {}),
+      },
     };
   });
   // Fall back: if slug missing, look up from services table
@@ -205,23 +212,29 @@ export async function POST(req) {
     related_job_id: job.id,
   });
 
-  // 6. Notify the agency user who placed the order, and the client (if active).
+  // 6. Notify the placing agency user + all admin accounts of the pending order.
   const notifications = [
     {
       user_id: user.id,
       type: "order_update",
-      title: `Order ${job.job_number} placed`,
-      body: `${pricedItems.length} project${pricedItems.length === 1 ? "" : "s"} · ${money(totalRetail)} billed · ${money(totalRetail - totalCost)} profit`,
+      title: `Order ${job.job_number} submitted — awaiting admin approval`,
+      body: `${pricedItems.length} project${pricedItems.length === 1 ? "" : "s"} · ${money(totalRetail)} retail · ${money(totalRetail - totalCost)} profit. You'll be notified once confirmed.`,
       link: `/agency/orders/${job.id}`,
     },
   ];
-  if (client && client.portal_user_id) {
+
+  // Notify every admin so they can review and confirm.
+  const { data: admins } = await admin
+    .from("user_profiles")
+    .select("id")
+    .eq("role", "admin");
+  for (const a of admins ?? []) {
     notifications.push({
-      user_id: client.portal_user_id,
+      user_id: a.id,
       type: "order_update",
-      title: "A new project is underway",
-      body: `${pricedItems.length} service${pricedItems.length === 1 ? "" : "s"} added to your portal`,
-      link: null,
+      title: `⏳ New order pending approval: ${job.job_number}`,
+      body: `${money(totalCost)} cost · ${pricedItems.length} service${pricedItems.length === 1 ? "" : "s"} · placed by agency`,
+      link: `/admin/orders`,
     });
   }
   await admin.from("notifications").insert(notifications);

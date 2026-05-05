@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -63,7 +64,7 @@ export function ProjectDetailView({
     : "direct";
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-5 lg:py-7 pb-20 lg:pb-8 max-w-[1100px] mx-auto w-full">
+    <div className="px-4 sm:px-6 lg:px-8 py-5 lg:py-7 pb-20 lg:pb-8 max-w-275 mx-auto w-full">
       <Link
         href={backHref}
         className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-dark mb-4"
@@ -82,7 +83,7 @@ export function ProjectDetailView({
             "linear-gradient(135deg, var(--color-navy) 0%, #152d52 60%, var(--color-navy) 100%)",
         }}
       >
-        <div className="flex items-start justify-between gap-4 flex-wrap relative z-[1]">
+        <div className="flex items-start justify-between gap-4 flex-wrap relative z-1">
           <div className="flex items-start gap-4 min-w-0">
             <div
               className="w-12 h-12 rounded-[14px] flex items-center justify-center text-[1.3rem] shrink-0"
@@ -112,7 +113,7 @@ export function ProjectDetailView({
                 )}
                 {project.is_rush && (
                   <span
-                    className="inline-flex items-center px-2 py-[2px] rounded-full text-[0.62rem] font-bold"
+                    className="inline-flex items-center px-2 py-0.5 rounded-full text-[0.62rem] font-bold"
                     style={{
                       background: "rgba(245,158,11,0.15)",
                       color: "var(--color-amber)",
@@ -149,7 +150,7 @@ export function ProjectDetailView({
         </div>
 
         {/* Progress bar */}
-        <div className="mt-5 relative z-[1]">
+        <div className="mt-5 relative z-1">
           <div className="flex justify-between text-[0.7rem] text-white/50 mb-1.5 font-semibold">
             <span>Progress</span>
             <span>{pct}%</span>
@@ -216,7 +217,7 @@ export function ProjectDetailView({
       {/* 2-col: stages + (brief / files) */}
       <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-5 items-start">
         {/* Stages */}
-        <section className="bg-white border border-border rounded-[16px] p-5 shadow-sm">
+        <section className="bg-white border border-border rounded-lg p-5 shadow-sm">
           <h2 className="font-display text-[0.95rem] font-extrabold text-dark mb-4">
             Stages
           </h2>
@@ -225,7 +226,7 @@ export function ProjectDetailView({
 
         {/* Brief + Deliverables + Activity */}
         <div className="flex flex-col gap-4">
-          <section className="bg-white border border-border rounded-[16px] p-5 shadow-sm">
+          <section className="bg-white border border-border rounded-lg p-5 shadow-sm">
             <h2 className="font-display text-[0.95rem] font-extrabold text-dark mb-3">
               Brief
             </h2>
@@ -247,7 +248,7 @@ export function ProjectDetailView({
             canUpload={viewer === "agency" || viewerIsAdmin}
           />
 
-          <section className="bg-white border border-border rounded-[16px] p-5 shadow-sm">
+          <section className="bg-white border border-border rounded-lg p-5 shadow-sm">
             <h2 className="font-display text-[0.95rem] font-extrabold text-dark mb-3">
               Activity
             </h2>
@@ -274,25 +275,82 @@ export function ProjectDetailView({
 }
 
 function BriefRenderer({ data }) {
-  // Display a pleasant read-only view of the jsonb brief.
-  const keys = Object.keys(data ?? {});
-  if (keys.length === 0) return <p className="text-sm text-muted">Empty brief.</p>;
+  const keys = Object.keys(data ?? {}).filter((k) => k !== "_attachments");
+  const attachments = Array.isArray(data?._attachments) ? data._attachments : [];
+
+  if (keys.length === 0 && attachments.length === 0) {
+    return <p className="text-sm text-muted">Empty brief.</p>;
+  }
+
   return (
-    <dl className="flex flex-col gap-3 text-sm">
+    <div className="flex flex-col gap-3 text-sm">
       {keys.map((k) => (
         <div key={k} className="flex flex-col">
-          <dt
+          <div
             className="text-[0.72rem] font-bold uppercase text-muted mb-1"
             style={{ letterSpacing: "0.08em" }}
           >
             {humanise(k)}
-          </dt>
-          <dd className="text-body whitespace-pre-wrap leading-relaxed">
+          </div>
+          <div className="text-body whitespace-pre-wrap leading-relaxed">
             {stringify(data[k])}
-          </dd>
+          </div>
         </div>
       ))}
-    </dl>
+
+      {attachments.length > 0 && (
+        <div className="flex flex-col">
+          <div
+            className="text-[0.72rem] font-bold uppercase text-muted mb-2"
+            style={{ letterSpacing: "0.08em" }}
+          >
+            Reference files ({attachments.length})
+          </div>
+          <div className="flex flex-col gap-1.5">
+            {attachments.map((a) => (
+              <AttachmentLink key={a.path} attachment={a} />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AttachmentLink({ attachment }) {
+  const [url, setUrl] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  async function download() {
+    if (url) { window.open(url, "_blank"); return; }
+    setLoading(true);
+    const res = await fetch(`/api/order-attachments?path=${encodeURIComponent(attachment.path)}`);
+    const data = await res.json().catch(() => ({}));
+    setLoading(false);
+    if (data.url) { setUrl(data.url); window.open(data.url, "_blank"); }
+  }
+
+  function fmtSize(bytes) {
+    if (!bytes) return "";
+    if (bytes < 1024 * 1024) return ` · ${(bytes / 1024).toFixed(0)} KB`;
+    return ` · ${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  }
+
+  return (
+    <button
+      onClick={download}
+      disabled={loading}
+      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-[8px] bg-off border border-border text-left hover:border-teal hover:bg-teal-pale transition-colors disabled:opacity-60 w-full"
+    >
+      <span className="text-[0.9rem]">📎</span>
+      <span className="flex-1 min-w-0 text-[0.82rem] font-semibold text-dark truncate">
+        {attachment.name}
+        <span className="text-muted font-normal">{fmtSize(attachment.size)}</span>
+      </span>
+      <span className="text-[0.72rem] text-teal font-semibold shrink-0">
+        {loading ? "Loading…" : "↓ Download"}
+      </span>
+    </button>
   );
 }
 
@@ -339,7 +397,7 @@ function SiblingProjectSwitcher({ items, baseHref, activeId }) {
               <span>{p.service?.icon ?? "•"}</span>
               <span>{p.service?.name ?? "Project"}</span>
               <span
-                className={`text-[0.62rem] uppercase font-bold px-1.5 py-[1px] rounded-full ${
+                className={`text-[0.62rem] uppercase font-bold px-1.5 py-px rounded-full ${
                   active ? "bg-white/20" : "bg-white"
                 }`}
                 style={{ letterSpacing: "0.06em", color: active ? "white" : STATUS_COLOR[p.status] ?? "var(--color-muted)" }}
@@ -389,7 +447,7 @@ function RevisionNoteBanner({ note, requestedAt, revisionCount, canReply, projec
 
   return (
     <section
-      className="rounded-[16px] p-4 mb-4"
+      className="rounded-lg p-4 mb-4"
       style={{
         background: "rgba(59,130,246,0.06)",
         border: "1px solid rgba(59,130,246,0.25)",
@@ -409,7 +467,7 @@ function RevisionNoteBanner({ note, requestedAt, revisionCount, canReply, projec
               Revision requested
             </div>
             <span
-              className="inline-flex items-center px-2 py-[2px] rounded-full text-[0.65rem] font-bold"
+              className="inline-flex items-center px-2 py-0.5 rounded-full text-[0.65rem] font-bold"
               style={{
                 background: "rgba(59,130,246,0.12)",
                 color: "var(--color-blue, #3b82f6)",

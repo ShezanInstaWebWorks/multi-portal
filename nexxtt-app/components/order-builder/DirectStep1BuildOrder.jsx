@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronUp, Users } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { formatCents } from "@/lib/money";
 import { OrderAttachments } from "./OrderAttachments";
 
@@ -13,22 +13,18 @@ const TIER_COLORS = {
   premium: { bg: "rgba(124,58,237,0.08)", text: "var(--color-adm)", border: "var(--color-adm)" },
 };
 
-export function Step1BuildOrder({
+export function DirectStep1BuildOrder({
   services = [],
-  clients,
   packagesByService,
   selections,
   selectPackage,
   toggleRush,
   selectedItems,
   totals,
-  clientId,
-  setClientId,
   onNext,
   attachments = [],
   setAttachments,
 }) {
-  // All sections open by default so packages are immediately visible.
   const [openSections, setOpenSections] = useState(() => {
     const init = {};
     for (const slug of Object.keys(packagesByService)) {
@@ -47,38 +43,14 @@ export function Step1BuildOrder({
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-7 items-start">
       {/* Left column */}
       <div>
-        {/* Client selector */}
-        <div className="flex items-center gap-3 p-4 bg-white border border-border rounded-[12px] mb-7">
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-            style={{ background: "var(--color-teal-pale)", color: "var(--color-teal)" }}
-          >
-            <Users className="w-4 h-4" />
-          </div>
-          <span className="text-[0.82rem] font-semibold text-muted whitespace-nowrap">Order for:</span>
-          <select
-            value={clientId ?? ""}
-            onChange={(e) => setClientId(e.target.value || null)}
-            className="flex-1 px-3 py-2 border border-border rounded-[8px] text-[0.9rem] font-semibold outline-none bg-white text-dark focus:border-teal"
-          >
-            <option value="">Select existing client…</option>
-            {clients.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.business_name} — {c.contact_name}
-              </option>
-            ))}
-          </select>
-        </div>
-
         {/* Reference file attachments */}
         {setAttachments && (
           <OrderAttachments attachments={attachments} onChange={setAttachments} />
         )}
 
-        {/* Service + package sections */}
         {serviceSlugs.length === 0 && (
           <div className="text-center py-12 text-sm text-muted bg-white border border-border rounded-[14px]">
-            No services available yet. Please contact your administrator.
+            No services available yet. Please contact support.
           </div>
         )}
 
@@ -86,7 +58,6 @@ export function Step1BuildOrder({
           const pkgs = packagesByService[slug] ?? [];
           if (pkgs.length === 0) return null;
 
-          // Look up real service name + icon from the services array.
           const svc = services.find((s) => s.slug === slug);
           const serviceIcon = svc?.icon ?? "•";
           const serviceName = svc?.name ?? slug;
@@ -98,7 +69,7 @@ export function Step1BuildOrder({
 
           return (
             <div key={slug} className="mb-4">
-              {/* Section header — toggles packages */}
+              {/* Section header */}
               <button
                 type="button"
                 onClick={() => toggleSection(slug)}
@@ -136,7 +107,6 @@ export function Step1BuildOrder({
                     .map((p) => {
                       const isSelected = p.id === selectedPkgId;
                       const tc = TIER_COLORS[p.tier] ?? TIER_COLORS.starter;
-                      const profit = p.retail_cents - p.cost_cents;
                       const isPopular = p.is_popular || p.tier === "growth";
 
                       return (
@@ -179,10 +149,9 @@ export function Step1BuildOrder({
                             {TIER_LABELS[p.tier] ?? p.tier}
                           </div>
 
-                          {/* Price */}
+                          {/* Price — retail for direct clients */}
                           <div className="font-display text-[1.5rem] font-extrabold text-dark leading-none">
-                            {formatCents(p.cost_cents)}
-                            <span className="text-[0.72rem] font-normal text-muted ml-1">your cost</span>
+                            {formatCents(p.retail_cents)}
                           </div>
 
                           {/* Package name + description */}
@@ -204,10 +173,7 @@ export function Step1BuildOrder({
                           {/* Footer */}
                           <div className="flex items-center justify-between mt-4 pt-3 border-t border-border">
                             <span className="text-[0.72rem] text-muted">
-                              Retail {formatCents(p.retail_cents)}
-                            </span>
-                            <span className="text-[0.82rem] font-bold text-green">
-                              +{formatCents(profit)} profit
+                              {p.delivery_days} day delivery
                             </span>
                           </div>
 
@@ -226,7 +192,7 @@ export function Step1BuildOrder({
                 </div>
               )}
 
-              {/* Rush toggle — shown below packages once a package is selected */}
+              {/* Rush toggle */}
               {selectedPkg && isOpen && (
                 <label
                   className="flex items-center gap-2.5 mt-3 px-4 py-3 bg-white border border-border rounded-[10px] cursor-pointer hover:border-teal transition-colors"
@@ -268,7 +234,7 @@ export function Step1BuildOrder({
                     <div className="text-[0.78rem] font-semibold truncate">{item.serviceName}</div>
                     <div className="text-[0.68rem] text-white/50">{item.packageName}</div>
                   </div>
-                  <div className="text-[0.78rem] font-bold">{formatCents(item.sell_cents)}</div>
+                  <div className="text-[0.78rem] font-bold">{formatCents(item.retail_cents)}</div>
                 </div>
               ))}
             </div>
@@ -277,34 +243,28 @@ export function Step1BuildOrder({
           {selectedItems.length > 0 && (
             <div className="mt-4 pt-3 border-t border-white/10">
               <div className="flex items-center justify-between text-[0.78rem]">
-                <span className="text-white/60">Total cost</span>
-                <span className="font-bold">{formatCents(totals.cost)}</span>
-              </div>
-              <div className="flex items-center justify-between text-[0.78rem] mt-1">
-                <span className="text-white/60">Est. profit</span>
-                <span className="font-bold text-green">{formatCents(totals.profit)}</span>
+                <span className="text-white/60">Total</span>
+                <span className="font-bold">{formatCents(totals.retail)}</span>
               </div>
             </div>
           )}
         </div>
 
-        {/* Continue button — wired to the wizard's next-step handler */}
+        {/* Continue button */}
         <button
           type="button"
           onClick={onNext}
-          disabled={selectedItems.length === 0 || !clientId}
+          disabled={selectedItems.length === 0}
           className="w-full mt-3 px-5 py-3 rounded-[10px] text-sm font-extrabold text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:-translate-y-px"
           style={{
             background: "var(--color-teal)",
             boxShadow: "0 2px 10px rgba(0,184,169,0.25)",
           }}
         >
-          Set Pricing →
+          Continue to Payment →
         </button>
         <p className="text-[0.72rem] text-muted text-center mt-1.5">
-          {!clientId
-            ? "Select a client to continue"
-            : selectedItems.length > 0
+          {selectedItems.length > 0
             ? `${selectedItems.length} service${selectedItems.length > 1 ? "s" : ""} selected`
             : "Select a package to continue"}
         </p>

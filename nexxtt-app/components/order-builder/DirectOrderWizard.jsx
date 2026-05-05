@@ -4,37 +4,29 @@ import { useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Check } from "lucide-react";
-import { Step1BuildOrder } from "./Step1BuildOrder";
-import { Step2SetPricing } from "./Step2SetPricing";
-import { Step3ConfirmPay } from "./Step3ConfirmPay";
-import { OrderAttachments } from "./OrderAttachments";
+import { DirectStep1BuildOrder } from "./DirectStep1BuildOrder";
+import { DirectStep2ConfirmPay } from "./DirectStep2ConfirmPay";
 import { formatCents } from "@/lib/money";
 
 const STEPS = [
   { n: 1, label: "Build Order" },
-  { n: 2, label: "Set Pricing" },
-  { n: 3, label: "Confirm & Pay" },
+  { n: 2, label: "Confirm & Pay" },
 ];
 
-export function OrderWizard({ services, packages, clients, agency, rushSurcharge }) {
+export function DirectOrderWizard({ services, packages, user }) {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
 
-  // Core state
-  const [clientId, setClientId] = useState(null);
-  // selections[serviceSlug] = { packageId, rush, addons: {} }
+  // selections[serviceSlug] = { packageId, rush }
   const [selections, setSelections] = useState({});
-  // sellPrices[serviceSlug] = cents (editable in step 2)
-  const [sellPrices, setSellPrices] = useState({});
   // briefs[serviceSlug] = { ... }
   const [briefs, setBriefs] = useState({});
-  // paymentMethod: 'balance' | 'card'
-  const [paymentMethod, setPaymentMethod] = useState("balance");
-  const [termsAccepted, setTermsAccepted] = useState(false);
-  // attachments: [{ path, name, size, mime }] — pre-uploaded to order-attachments bucket
+  // attachments: [{ path, name, size, mime }]
   const [attachments, setAttachments] = useState([]);
+  const [paymentMethod, setPaymentMethod] = useState("card");
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   // Group packages by service slug
   const packagesByService = useMemo(() => {
@@ -57,10 +49,7 @@ export function OrderWizard({ services, packages, clients, agency, rushSurcharge
         if (!svc) return null;
         const pkg = packages.find((p) => p.id === sel.packageId);
         if (!pkg) return null;
-        const cost = sel.rush
-          ? Math.round(pkg.cost_cents * (1 + rushSurcharge))
-          : pkg.cost_cents;
-        const sell = sellPrices[slug] ?? pkg.retail_cents;
+        const retail = pkg.retail_cents;
         return {
           slug,
           serviceId: svc.id,
@@ -71,20 +60,16 @@ export function OrderWizard({ services, packages, clients, agency, rushSurcharge
           tier: pkg.tier,
           deliveryDays: pkg.delivery_days,
           features: pkg.features ?? [],
-          cost_cents: cost,
-          sell_cents: sell,
-          profit_cents: sell - cost,
+          retail_cents: retail,
           rush: sel.rush,
-          addons: sel.addons ?? {},
         };
       })
       .filter(Boolean);
-  }, [selections, sellPrices, services, packages, rushSurcharge]);
+  }, [selections, services, packages]);
 
   const totals = useMemo(() => {
-    const cost = selectedItems.reduce((a, s) => a + s.cost_cents, 0);
-    const sell = selectedItems.reduce((a, s) => a + s.sell_cents, 0);
-    return { cost, sell, profit: sell - cost };
+    const retail = selectedItems.reduce((a, s) => a + s.retail_cents, 0);
+    return { retail };
   }, [selectedItems]);
 
   const selectPackage = useCallback((slug, packageId) => {
@@ -106,14 +91,9 @@ export function OrderWizard({ services, packages, clients, agency, rushSurcharge
     }));
   }, []);
 
-  const updateSellPrice = useCallback((slug, cents) => {
-    setSellPrices((prev) => ({ ...prev, [slug]: cents }));
-  }, []);
-
   const canAdvance = {
-    1: selectedItems.length > 0 && !!clientId,
-    2: true,
-    3: termsAccepted,
+    1: selectedItems.length > 0,
+    2: termsAccepted,
   }[step];
 
   async function handleSubmit() {
@@ -122,20 +102,18 @@ export function OrderWizard({ services, packages, clients, agency, rushSurcharge
     setSubmitError(null);
 
     const payload = {
-      clientId,
       attachments,
       items: selectedItems.map((s) => ({
         serviceId: s.serviceId,
         packageId: s.packageId,
         rush: s.rush,
-        cost_cents: s.cost_cents,
-        retail_cents: s.sell_cents,
+        retail_cents: s.retail_cents,
         brief: briefs[s.slug] ?? {},
       })),
     };
 
     try {
-      const res = await fetch("/api/jobs", {
+      const res = await fetch("/api/direct-orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -148,7 +126,7 @@ export function OrderWizard({ services, packages, clients, agency, rushSurcharge
         return;
       }
 
-      router.push(`/agency/orders/${body.job.id}`);
+      router.push(`/direct/orders/${body.job.id}`);
       router.refresh();
     } catch {
       setSubmitting(false);
@@ -160,39 +138,33 @@ export function OrderWizard({ services, packages, clients, agency, rushSurcharge
     services,
     packages,
     packagesByService,
-    clients,
-    agency,
-    rushSurcharge,
-    clientId,
-    setClientId,
     selections,
     selectPackage,
     toggleRush,
     selectedItems,
     totals,
-    sellPrices,
-    updateSellPrice,
     briefs,
     setBriefs,
+    attachments,
+    setAttachments,
     paymentMethod,
     setPaymentMethod,
     termsAccepted,
     setTermsAccepted,
     submitError,
+    user,
     onNext: () => canAdvance && setStep((s) => s + 1),
-    attachments,
-    setAttachments,
   };
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-5 lg:py-7 pb-24 lg:pb-8 max-w-[1200px] mx-auto w-full">
       {/* Back link */}
       <Link
-        href="/agency/dashboard"
+        href="/direct/orders"
         className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-dark mb-4"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
-        Back to dashboard
+        Back to my orders
       </Link>
 
       {/* Progress bar */}
@@ -258,9 +230,8 @@ export function OrderWizard({ services, packages, clients, agency, rushSurcharge
 
       {/* Step content */}
       <div className="mb-8">
-        {step === 1 && <Step1BuildOrder {...stepProps} />}
-        {step === 2 && <Step2SetPricing {...stepProps} />}
-        {step === 3 && <Step3ConfirmPay {...stepProps} />}
+        {step === 1 && <DirectStep1BuildOrder {...stepProps} />}
+        {step === 2 && <DirectStep2ConfirmPay {...stepProps} />}
       </div>
 
       {/* Nav */}
@@ -268,13 +239,9 @@ export function OrderWizard({ services, packages, clients, agency, rushSurcharge
         <div className="text-sm text-muted">
           {selectedItems.length > 0 && (
             <>
-              Total cost{" "}
+              Total{" "}
               <span className="font-bold text-dark">
-                {formatCents(totals.cost)}
-              </span>{" "}
-              · Profit{" "}
-              <span className="font-bold text-green">
-                {formatCents(totals.profit)}
+                {formatCents(totals.retail)}
               </span>
             </>
           )}
@@ -288,7 +255,7 @@ export function OrderWizard({ services, packages, clients, agency, rushSurcharge
               Back
             </button>
           )}
-          {step < 3 && (
+          {step < 2 && (
             <button
               onClick={() => setStep(step + 1)}
               disabled={!canAdvance}
@@ -298,10 +265,10 @@ export function OrderWizard({ services, packages, clients, agency, rushSurcharge
                 boxShadow: "0 2px 10px rgba(0,184,169,0.25)",
               }}
             >
-              {step === 1 ? "Set Pricing →" : "Continue to Payment →"}
+              Continue to Payment →
             </button>
           )}
-          {step === 3 && (
+          {step === 2 && (
             <button
               onClick={handleSubmit}
               disabled={!canAdvance || submitting}
@@ -311,7 +278,7 @@ export function OrderWizard({ services, packages, clients, agency, rushSurcharge
                 boxShadow: "0 2px 10px rgba(0,184,169,0.25)",
               }}
             >
-              {submitting ? "Placing order…" : `Place Order · Pay ${formatCents(totals.cost)}`}
+              {submitting ? "Placing order…" : `Place Order · Pay ${formatCents(totals.retail)}`}
             </button>
           )}
         </div>

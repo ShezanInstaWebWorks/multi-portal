@@ -17,7 +17,9 @@
       "Bash(find d:/Extension/project-management-shezan -maxdepth 2 -name *.env* -o -name server.js -o -name index.js)",
       "mcp__supabase__list_projects",
       "mcp__supabase__list_tables",
-      "mcp__supabase__execute_sql"
+      "mcp__supabase__execute_sql",
+      "Bash(Get-ChildItem -Path \"d:\\\\Extension\\\\A folder\\(Project Mahagement\\)\\\\multi-portal\\\\nexxtt-app\\\\app\\\\agency\" -Recurse -File)",
+      "Bash(Select-Object -ExpandProperty FullName)"
     ]
   }
 }

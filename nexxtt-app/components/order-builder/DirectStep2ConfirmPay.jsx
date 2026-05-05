@@ -1,22 +1,18 @@
 "use client";
 
-import { CreditCard, Wallet, FileText, CheckCircle, AlertCircle } from "lucide-react";
+import { CreditCard, Wallet, CheckCircle, AlertCircle } from "lucide-react";
 import { formatCents } from "@/lib/money";
 
-export function Step3ConfirmPay({
+export function DirectStep2ConfirmPay({
   selectedItems,
   totals,
-  clientId,
-  clients,
   paymentMethod,
   setPaymentMethod,
   termsAccepted,
   setTermsAccepted,
   submitError,
-  agency,
+  user,
 }) {
-  const selectedClient = clients.find((c) => c.id === clientId);
-
   if (selectedItems.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -36,22 +32,20 @@ export function Step3ConfirmPay({
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-7 items-start">
       {/* Left column */}
       <div>
-        {/* Client info */}
-        {selectedClient && (
+        {/* User info */}
+        {user?.email && (
           <div className="flex items-center gap-3 p-4 bg-white border border-border rounded-[12px] mb-6">
             <div
               className="w-10 h-10 rounded-full flex items-center justify-center text-[0.82rem] font-bold text-white shrink-0"
               style={{ background: "var(--color-navy)" }}
             >
-              {selectedClient.business_name.charAt(0).toUpperCase()}
+              {user.email.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
               <div className="font-display font-bold text-[0.95rem] text-dark truncate">
-                {selectedClient.business_name}
+                {user.email}
               </div>
-              <div className="text-[0.72rem] text-muted">
-                {selectedClient.contact_name} · {selectedClient.contact_email}
-              </div>
+              <div className="text-[0.72rem] text-muted">Direct Client</div>
             </div>
           </div>
         )}
@@ -70,7 +64,7 @@ export function Step3ConfirmPay({
                   <div className="text-[0.72rem] text-muted">
                     {item.packageName}
                     {item.rush && (
-                      <span className="ml-2 px-1.5 py-0.5 rounded text-[0.62rem] font-bold text-orange bg-orange/10">
+                      <span className="ml-2 px-1.5 py-0.5 rounded text-[0.62rem] font-bold text-amber bg-amber/10">
                         RUSH
                       </span>
                     )}
@@ -78,8 +72,7 @@ export function Step3ConfirmPay({
                   </div>
                 </div>
                 <div className="text-right shrink-0">
-                  <div className="text-[0.82rem] font-bold text-dark">{formatCents(item.sell_cents)}</div>
-                  <div className="text-[0.68rem] text-muted">cost {formatCents(item.cost_cents)}</div>
+                  <div className="text-[0.82rem] font-bold text-dark">{formatCents(item.retail_cents)}</div>
                 </div>
               </div>
             ))}
@@ -91,6 +84,7 @@ export function Step3ConfirmPay({
           <div className="text-[0.78rem] font-semibold text-dark mb-4">Payment Method</div>
           <div className="grid grid-cols-2 gap-3">
             <button
+              type="button"
               onClick={() => setPaymentMethod("balance")}
               className={`flex items-center gap-3 p-4 rounded-[10px] border-2 transition-all ${
                 paymentMethod === "balance"
@@ -106,14 +100,13 @@ export function Step3ConfirmPay({
                 <Wallet className="w-5 h-5" />
               </div>
               <div className="text-left">
-                <div className="text-[0.82rem] font-bold text-dark">Agency Balance</div>
-                <div className="text-[0.68rem] text-muted">
-                  {agency?.balance_cents != null ? formatCents(agency.balance_cents) : "—"} available
-                </div>
+                <div className="text-[0.82rem] font-bold text-dark">Wallet Balance</div>
+                <div className="text-[0.68rem] text-muted">Use your credits</div>
               </div>
             </button>
 
             <button
+              type="button"
               onClick={() => setPaymentMethod("card")}
               className={`flex items-center gap-3 p-4 rounded-[10px] border-2 transition-all ${
                 paymentMethod === "card"
@@ -148,8 +141,8 @@ export function Step3ConfirmPay({
           </div>
           <div className="text-[0.82rem] text-body">
             I confirm this order is correct and agree to the{" "}
-            <span className="text-teal font-semibold">Service Agreement</span> and{" "}
-            <span className="text-teal font-semibold">Reseller Terms</span>.
+            <span className="text-teal font-semibold">Terms of Service</span> and{" "}
+            <span className="text-teal font-semibold">Refund Policy</span>.
           </div>
         </label>
 
@@ -172,35 +165,20 @@ export function Step3ConfirmPay({
             {selectedItems.map((item) => (
               <div key={item.slug} className="flex items-center justify-between text-[0.78rem]">
                 <span className="text-white/70 truncate mr-2">{item.serviceName}</span>
-                <span className="font-bold whitespace-nowrap">{formatCents(item.sell_cents)}</span>
+                <span className="font-bold whitespace-nowrap">{formatCents(item.retail_cents)}</span>
               </div>
             ))}
           </div>
 
-          <div className="border-t border-white/10 pt-3 flex flex-col gap-1.5">
-            <div className="flex items-center justify-between text-[0.78rem]">
-              <span className="text-white/60">Subtotal</span>
-              <span className="font-bold">{formatCents(totals.sell)}</span>
-            </div>
-            <div className="flex items-center justify-between text-[0.78rem]">
-              <span className="text-white/60">Our cost</span>
-              <span>{formatCents(totals.cost)}</span>
-            </div>
-            <div className="flex items-center justify-between text-[0.78rem]">
-              <span className="text-white/60">Your profit</span>
-              <span className="font-bold text-green">{formatCents(totals.profit)}</span>
-            </div>
-          </div>
-
           <div className="border-t border-white/10 mt-3 pt-3 flex items-center justify-between">
-            <span className="text-[0.82rem] font-bold">Amount due</span>
-            <span className="text-[1.3rem] font-extrabold">{formatCents(totals.cost)}</span>
+            <span className="text-[0.82rem] font-bold">Total due</span>
+            <span className="text-[1.3rem] font-extrabold">{formatCents(totals.retail)}</span>
           </div>
 
           <div className="mt-4 flex items-center gap-2 text-[0.72rem] text-white/50">
             <CheckCircle className="w-3.5 h-3.5 text-green" />
             Payment via{" "}
-            {paymentMethod === "balance" ? "agency balance" : "credit card"}
+            {paymentMethod === "balance" ? "wallet balance" : "credit card"}
           </div>
         </div>
       </div>

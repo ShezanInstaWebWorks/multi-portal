@@ -15,6 +15,13 @@ export default async function AdminOrdersPage({ searchParams }) {
   if (!user) redirect("/login");
 
   const admin = createAdminSupabaseClient();
+
+  // Count pending orders for the alert badge — always fetched regardless of filter.
+  const { count: pendingCount } = await admin
+    .from("jobs")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "pending_admin_approval");
+
   let q = admin
     .from("jobs")
     .select(
@@ -52,10 +59,73 @@ export default async function AdminOrdersPage({ searchParams }) {
         <h1 className="font-display text-[1.2rem] font-extrabold text-dark mb-1">
           Platform orders
         </h1>
-        <p className="text-sm text-muted mb-5">
+        <p className="text-sm text-muted mb-4">
           Every job across agency + direct portals.
-          {statusFilter && <> Filtered by status <strong className="text-dark">{statusFilter}</strong>.</>}
         </p>
+
+        {/* Pending approval alert */}
+        {pendingCount > 0 && (
+          <div
+            className="flex items-center gap-3 px-4 py-3 rounded-[12px] mb-5 border"
+            style={{
+              background: "rgba(245,158,11,0.07)",
+              borderColor: "rgba(245,158,11,0.3)",
+            }}
+          >
+            <span className="text-[1.1rem]">⏳</span>
+            <div className="flex-1">
+              <div className="text-[0.88rem] font-bold text-dark">
+                {pendingCount} order{pendingCount === 1 ? "" : "s"} awaiting your approval
+              </div>
+              <div className="text-[0.75rem] text-muted">
+                Review and confirm or reject before work can begin.
+              </div>
+            </div>
+            <a
+              href="?status=pending_admin_approval"
+              className="px-4 py-1.5 rounded-[8px] text-[0.78rem] font-bold text-white whitespace-nowrap"
+              style={{ background: "var(--color-amber)" }}
+            >
+              Review →
+            </a>
+          </div>
+        )}
+
+        {/* Status filter tabs */}
+        <div className="flex gap-2 flex-wrap mb-5">
+          {[
+            { label: "All orders",       value: null },
+            { label: "⏳ Pending approval", value: "pending_admin_approval" },
+            { label: "Brief pending",    value: "brief_pending" },
+            { label: "In progress",      value: "in_progress" },
+            { label: "In review",        value: "in_review" },
+            { label: "Delivered",        value: "delivered" },
+            { label: "Rejected",         value: "rejected" },
+          ].map((tab) => {
+            const active = statusFilter === tab.value;
+            return (
+              <a
+                key={tab.label}
+                href={tab.value ? `?status=${tab.value}` : "?"}
+                className={`px-3 py-1.5 rounded-full text-[0.78rem] font-semibold border transition-colors ${
+                  active
+                    ? "bg-navy text-white border-navy"
+                    : "bg-white text-muted border-border hover:border-navy hover:text-dark"
+                }`}
+              >
+                {tab.label}
+                {tab.value === "pending_admin_approval" && pendingCount > 0 && (
+                  <span
+                    className="ml-1.5 px-1.5 py-px rounded-full text-[0.65rem] font-bold"
+                    style={{ background: active ? "rgba(255,255,255,0.2)" : "rgba(245,158,11,0.15)", color: active ? "white" : "var(--color-amber)" }}
+                  >
+                    {pendingCount}
+                  </span>
+                )}
+              </a>
+            );
+          })}
+        </div>
 
         {/* Top stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">

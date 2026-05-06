@@ -1,5 +1,5 @@
 import { createServerSupabaseClient, createAdminSupabaseClient } from "@/lib/supabase/server";
-import { getStripe, ensureClientStripeCustomer, ensureDirectStripeCustomer } from "@/lib/stripe";
+import { getStripe, ensureDirectStripeCustomer } from "@/lib/stripe";
 
 // POST /api/wallet/topup-intent
 // Body: { amountCents: number }
@@ -32,24 +32,15 @@ export async function POST(req) {
 
   if (!profile) return Response.json({ error: "No profile" }, { status: 403 });
 
+  if (profile.role !== "direct_client") {
+    return Response.json({ error: "Only direct clients can top up a wallet", code: "ROLE" }, { status: 403 });
+  }
+
   let customerId;
   let metadata;
   try {
-    if (profile.role === "agency_client") {
-      const { data: client } = await admin
-        .from("clients")
-        .select("id")
-        .eq("portal_user_id", user.id)
-        .maybeSingle();
-      if (!client) return Response.json({ error: "No client record" }, { status: 400 });
-      customerId = await ensureClientStripeCustomer(admin, client.id);
-      metadata = { wallet_kind: "agency_client", client_id: client.id };
-    } else if (profile.role === "direct_client") {
-      customerId = await ensureDirectStripeCustomer(admin, user.id, admin);
-      metadata = { wallet_kind: "direct_client", direct_client_user_id: user.id };
-    } else {
-      return Response.json({ error: "Only clients can top up a wallet", code: "ROLE" }, { status: 403 });
-    }
+    customerId = await ensureDirectStripeCustomer(admin, user.id, admin);
+    metadata = { wallet_kind: "direct_client", direct_client_user_id: user.id };
   } catch (e) {
     return Response.json({ error: e.message ?? "Stripe customer setup failed" }, { status: 500 });
   }

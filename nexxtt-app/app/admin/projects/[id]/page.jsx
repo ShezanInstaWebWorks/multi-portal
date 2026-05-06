@@ -78,6 +78,7 @@ export default async function AdminProjectWorkspace({ params, searchParams }) {
       service: p.services ?? null,
     })),
     baseHref: "/admin/projects",
+    querySuffix: isEmbed ? "?embed=1" : "",
   };
   const revisionNote = project.status === "revision_requested"
     ? await getLatestRevisionNote(admin, project.id)

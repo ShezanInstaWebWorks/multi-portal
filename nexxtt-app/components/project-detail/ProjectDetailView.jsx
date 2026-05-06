@@ -63,6 +63,20 @@ export function ProjectDetailView({
     ? "to_client"
     : "direct";
 
+  // Debug: log review conditions for troubleshooting
+  if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
+    console.log("[ProjectDetailView] Review conditions:", {
+      viewer,
+      viewerIsAdmin,
+      status: project.status,
+      canAdminSubmitToAgency,
+      canAgencyForwardToClient,
+      canAgencyDirectSubmit,
+      canSubmitForReview,
+      submitMode,
+    });
+  }
+
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-5 lg:py-7 pb-20 lg:pb-8 max-w-275 mx-auto w-full">
       <Link
@@ -176,6 +190,7 @@ export function ProjectDetailView({
         <SiblingProjectSwitcher
           items={siblings.items}
           baseHref={siblings.baseHref}
+          querySuffix={siblings.querySuffix ?? ""}
           activeId={project.id}
         />
       )}
@@ -369,7 +384,7 @@ function stringify(v) {
   return String(v);
 }
 
-function SiblingProjectSwitcher({ items, baseHref, activeId }) {
+function SiblingProjectSwitcher({ items, baseHref, querySuffix = "", activeId }) {
   return (
     <section
       className="bg-white border border-border rounded-[14px] p-3 mb-4"
@@ -386,7 +401,7 @@ function SiblingProjectSwitcher({ items, baseHref, activeId }) {
           return (
             <Link
               key={p.id}
-              href={`${baseHref}/${p.id}`}
+              href={`${baseHref}/${p.id}${querySuffix}`}
               className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-[10px] text-[0.78rem] font-semibold transition-colors border ${
                 active
                   ? "bg-teal text-white border-teal shadow-[0_2px_8px_rgba(0,184,169,0.25)]"

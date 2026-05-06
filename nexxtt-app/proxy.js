@@ -25,7 +25,14 @@ export async function proxy(req) {
           for (const { name, value } of cookiesToSet) {
             req.cookies.set(name, value);
           }
-          res = NextResponse.next({ request: { headers: req.headers } });
+          // Rebuild the cookie header so downstream server components
+          // receive the refreshed tokens, not the expired ones.
+          const newHeaders = new Headers(req.headers);
+          newHeaders.set(
+            "cookie",
+            req.cookies.getAll().map(({ name, value }) => `${name}=${value}`).join("; ")
+          );
+          res = NextResponse.next({ request: { headers: newHeaders } });
           for (const { name, value, options } of cookiesToSet) {
             res.cookies.set(name, value, options);
           }

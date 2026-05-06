@@ -39,7 +39,7 @@ const FLOWS = {
     { key: "brief_pending",        label: "Brief submitted",   desc: "Topics + voice confirmed." },
     { key: "in_progress",          label: "Drafting",          desc: "Writer working on articles." },
     { key: "agency_review",        label: "Agency review",     desc: "Agency reviewing before forwarding to you." },
-    { key: "in_review",            label: "Your review",       desc: "Review drafts + send feedback." },
+    { key: "in_review",            label: "Client review",     desc: "Client reviews drafts + sends feedback." },
     { key: "revision_requested",   label: "Edits",             desc: "Applying your changes." },
     { key: "delivered",            label: "Delivered",         desc: "Final copy + SEO-ready." },
   ],
@@ -72,7 +72,7 @@ export function ProjectStages({ serviceSlug, status }) {
             }}
           >
             <div
-              className="absolute -left-[13px] top-0 w-6 h-6 rounded-full flex items-center justify-center text-[0.65rem] font-extrabold border-2 border-white"
+              className="absolute -left-3.25 top-0 w-6 h-6 rounded-full flex items-center justify-center text-[0.65rem] font-extrabold border-2 border-white"
               style={
                 state === "done"
                   ? { background: "var(--color-teal)", color: "white", boxShadow: "0 2px 8px rgba(0,184,169,0.3)" }
@@ -93,7 +93,7 @@ export function ProjectStages({ serviceSlug, status }) {
               {stage.label}
               {state === "current" && (
                 <span
-                  className="ml-2 inline-flex items-center px-1.5 py-[1px] rounded-full text-[0.58rem] font-extrabold align-middle"
+                  className="ml-2 inline-flex items-center px-1.5 py-px rounded-full text-[0.58rem] font-extrabold align-middle"
                   style={{
                     background: "rgba(11,31,58,0.08)",
                     color: "var(--color-navy)",

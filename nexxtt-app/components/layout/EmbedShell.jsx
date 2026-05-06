@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 // Portal chrome wrapper. Hides sidebar/topbar/nav when `?embed=1` is in the
@@ -18,7 +19,30 @@ export function EmbedShell({
   children,
 }) {
   const sp = useSearchParams();
-  const isEmbed = sp.get("embed") === "1";
+  // Check both useSearchParams() AND window.location for iframe reliability
+  const [isEmbed, setIsEmbed] = useState(() => {
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get("embed") === "1" || sp.get("embed") === "1";
+    }
+    return sp.get("embed") === "1";
+  });
+
+  // Re-check on mount and when search params change (handles iframe navigation)
+  useEffect(() => {
+    const checkEmbed = () => {
+      if (typeof window !== "undefined") {
+        const urlParams = new URLSearchParams(window.location.search);
+        const embedFromUrl = urlParams.get("embed") === "1";
+        const embedFromHook = sp.get("embed") === "1";
+        setIsEmbed(embedFromUrl || embedFromHook);
+      }
+    };
+    checkEmbed();
+    // Listen for popstate in case of client-side navigation within iframe
+    window.addEventListener("popstate", checkEmbed);
+    return () => window.removeEventListener("popstate", checkEmbed);
+  }, [sp]);
 
   if (isEmbed) {
     return <div className="min-h-screen bg-off flex flex-col">{children}</div>;

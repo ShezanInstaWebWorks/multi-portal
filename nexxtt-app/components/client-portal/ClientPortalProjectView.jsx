@@ -13,7 +13,6 @@ const STAGE_FLOWS = {
   "website-design": [
     { key: "brief_pending",     label: "Brief submitted",   desc: "Your requirements are locked in." },
     { key: "in_progress",        label: "In production",     desc: "Your website is being designed and built." },
-    { key: "agency_review",      label: "Agency review",     desc: "Your agency is reviewing before sending to you." },
     { key: "in_review",          label: "Your review",       desc: "Please review and approve or request changes." },
     { key: "revision_requested", label: "Revisions",         desc: "Your feedback is being addressed." },
     { key: "delivered",          label: "Delivered ✓",      desc: "Your project is complete." },
@@ -21,7 +20,6 @@ const STAGE_FLOWS = {
   "logo-design": [
     { key: "brief_pending",     label: "Brief submitted",   desc: "Direction + inspiration captured." },
     { key: "in_progress",        label: "Designing",         desc: "Your designer is drafting concepts." },
-    { key: "agency_review",      label: "Agency review",     desc: "Your agency is reviewing before sending to you." },
     { key: "in_review",          label: "Choose concept",    desc: "Review the designs and pick your favourite." },
     { key: "revision_requested", label: "Refinement",        desc: "Your chosen concept is being polished." },
     { key: "delivered",          label: "Delivered ✓",      desc: "All files — SVG, PNG, PDF — are ready." },
@@ -29,7 +27,6 @@ const STAGE_FLOWS = {
   "brand-guidelines": [
     { key: "brief_pending",     label: "Brief submitted",   desc: "Brand inputs locked in." },
     { key: "in_progress",        label: "Creating system",   desc: "Full brand identity system being developed." },
-    { key: "agency_review",      label: "Agency review",     desc: "Your agency is reviewing before sending to you." },
     { key: "in_review",          label: "Your review",       desc: "Full brand system ready for your sign-off." },
     { key: "revision_requested", label: "Adjustments",       desc: "Your feedback is being applied." },
     { key: "delivered",          label: "Delivered ✓",      desc: "Full brand bible PDF is ready." },
@@ -37,7 +34,6 @@ const STAGE_FLOWS = {
   "social-media-pack": [
     { key: "brief_pending",     label: "Brief submitted",   desc: "Voice + platforms captured." },
     { key: "in_progress",        label: "Drafting posts",    desc: "Content calendar and creative in production." },
-    { key: "agency_review",      label: "Agency review",     desc: "Your agency is reviewing before sending to you." },
     { key: "in_review",          label: "Your approval",     desc: "Please review and approve the upcoming posts." },
     { key: "revision_requested", label: "Revisions",         desc: "Your feedback is being addressed." },
     { key: "delivered",          label: "Published ✓",      desc: "Posts are scheduled and going live." },
@@ -45,37 +41,45 @@ const STAGE_FLOWS = {
   "content-writing": [
     { key: "brief_pending",     label: "Brief submitted",   desc: "Topics and voice confirmed." },
     { key: "in_progress",        label: "Writing",           desc: "Your writer is working on the articles." },
-    { key: "agency_review",      label: "Agency review",     desc: "Your agency is reviewing before sending to you." },
     { key: "in_review",          label: "Your review",       desc: "Review the drafts and provide feedback." },
     { key: "revision_requested", label: "Edits",             desc: "Your feedback is being applied." },
     { key: "delivered",          label: "Delivered ✓",      desc: "Final copy is ready for publishing." },
   ],
 };
 
+// agency_review is an internal admin↔agency step — clients see it as "In production"
+function clientStatus(status) {
+  return status === "agency_review" ? "in_progress" : status;
+}
+
 function flowFor(slug) {
   return STAGE_FLOWS[slug] ?? STAGE_FLOWS["website-design"];
 }
 
 function calcProgress(slug, status) {
-  if (status === "delivered") return 100;
+  const s = clientStatus(status);
+  if (s === "delivered") return 100;
   const flow = flowFor(slug);
-  const i = flow.findIndex((s) => s.key === status);
+  const i = flow.findIndex((f) => f.key === s);
   return i <= 0 ? 0 : Math.round((i / (flow.length - 1)) * 100);
 }
 
 function stageIndex(slug, status) {
+  const s = clientStatus(status);
   const flow = flowFor(slug);
-  const i = flow.findIndex((s) => s.key === status);
+  const i = flow.findIndex((f) => f.key === s);
   return i >= 0 ? i : 0;
 }
 
 function currentStageFor(slug, status) {
-  return flowFor(slug).find((s) => s.key === status) ?? flowFor(slug)[0];
+  const s = clientStatus(status);
+  return flowFor(slug).find((f) => f.key === s) ?? flowFor(slug)[0];
 }
 
 function nextStagesFor(slug, status) {
+  const s = clientStatus(status);
   const flow = flowFor(slug);
-  const i = flow.findIndex((s) => s.key === status);
+  const i = flow.findIndex((f) => f.key === s);
   if (i < 0 || i >= flow.length - 1) return [];
   return flow.slice(i + 1);
 }

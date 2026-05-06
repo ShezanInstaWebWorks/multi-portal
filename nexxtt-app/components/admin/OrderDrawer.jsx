@@ -1,20 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
-import { X, ExternalLink } from "lucide-react";
+import { X } from "lucide-react";
 
-// Right-side slide-in drawer that embeds a project workspace via an iframe.
-// The portal layout + project page both honour `?embed=1` to skip their
-// sidebar/topbar/bottom-nav, so the drawer shows only the workspace content.
-//
-// Props:
-//   open        — whether the drawer is visible
-//   src         — full iframe URL (must already include `?embed=1` if desired)
-//   openHref    — the non-embed URL for the "Open full page" link
-//   title       — header label (e.g. job number or project name)
-//   subtitle    — small uppercase label above the title (defaults to "Order")
-//   onClose     — callback
-export function OrderDrawer({ open, src, openHref, title, subtitle = "Order", onClose }) {
+export function OrderDrawer({ open, src, title, subtitle = "Order", onClose }) {
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
@@ -57,16 +46,6 @@ export function OrderDrawer({ open, src, openHref, title, subtitle = "Order", on
             </div>
           </div>
           <div className="flex items-center gap-1.5">
-            {openHref && (
-              <a
-                href={openHref}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-[8px] text-[0.78rem] font-semibold text-body hover:bg-off border border-border"
-                title="Open full page"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Open full page</span>
-              </a>
-            )}
             <button
               onClick={onClose}
               className="p-2 rounded-[8px] text-muted hover:text-dark hover:bg-off"

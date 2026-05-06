@@ -5,6 +5,7 @@ import { tierFor, tierProgress } from "@/lib/priority";
 import { formatCents } from "@/lib/money";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { Wallet } from "lucide-react";
 
 // Wireframe s04d — command-center: 4 stat boxes, active-orders timeline,
 // activity feed + earnings chart. Now wired to live, tenant-scoped data.
@@ -252,6 +253,31 @@ export function DashboardD({ agency, firstName, jobs = [], clientsCount = 0 }) {
               {next
                 ? `${toGo} more job${toGo === 1 ? "" : "s"} to unlock ${next.label}`
                 : `You're at Elite — dedicated account manager + API access`}
+            </div>
+          </div>
+
+          {/* Prepaid balance chip */}
+          <div className="basis-full sm:basis-auto shrink-0">
+            <div
+              className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-[10px] border"
+              style={{ background: "var(--color-teal-pale)", borderColor: "var(--color-teal)" }}
+            >
+              <Wallet className="w-4 h-4 shrink-0" style={{ color: "var(--color-teal)" }} />
+              <div>
+                <div className="text-[0.7rem] font-bold uppercase text-muted" style={{ letterSpacing: "0.08em" }}>
+                  Balance
+                </div>
+                <div className="font-display font-extrabold text-[1.1rem] leading-none" style={{ color: "var(--color-teal)" }}>
+                  {formatCents(agency?.balance_cents ?? 0)}
+                </div>
+              </div>
+              <Link
+                href="/agency/finance/balance"
+                className="ml-1 text-[0.72rem] font-semibold px-2 py-1 rounded-md text-white"
+                style={{ background: "var(--color-teal)" }}
+              >
+                Top up
+              </Link>
             </div>
           </div>
         </div>

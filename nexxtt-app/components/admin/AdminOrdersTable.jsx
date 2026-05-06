@@ -47,7 +47,6 @@ export function AdminOrdersTable({ rows }) {
       <OrderDrawer
         open={!!active}
         src={active?.projectId ? `/admin/projects/${active.projectId}?embed=1` : null}
-        openHref={active?.projectId ? `/admin/projects/${active.projectId}` : null}
         title={active?.jobNumber ?? null}
         subtitle="Order"
         onClose={() => setActive(null)}

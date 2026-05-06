@@ -3,23 +3,9 @@
 // (job charges / adjustments). Never mutate; always insert a row.
 
 export async function resolveWalletOwnerForViewer(admin, user, profile) {
-  // Returns { clientId, directUserId, ownerKind, label } for the current viewer's own wallet,
-  // or null if the viewer doesn't have a wallet (agency / admin users don't).
+  // Returns { directUserId, ownerKind, label } for direct clients only.
+  // Agency clients do not pay — their orders are billed to the agency.
   if (!user || !profile) return null;
-  if (profile.role === "agency_client") {
-    const { data: client } = await admin
-      .from("clients")
-      .select("id, business_name")
-      .eq("portal_user_id", user.id)
-      .maybeSingle();
-    if (!client) return null;
-    return {
-      clientId: client.id,
-      directUserId: null,
-      ownerKind: "agency_client",
-      label: client.business_name ?? "Your wallet",
-    };
-  }
   if (profile.role === "direct_client") {
     return {
       clientId: null,

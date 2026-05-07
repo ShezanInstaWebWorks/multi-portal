@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { MessageSquare, Shield } from "lucide-react";
 
 // Two-pill switcher between the client-visible project chat and the private
 // admin ↔ agency project chat. Driven by ?thread=admin in the URL.
@@ -35,7 +36,8 @@ export function ProjectChatTabs({ variant = "agency" }) {
             : "bg-white text-muted border-border hover:text-teal hover:border-teal"
         }`}
       >
-        💬 {clientLabel}
+        <MessageSquare className="w-3.5 h-3.5 inline mr-1.5" />
+        {clientLabel}
       </button>
       <button
         type="button"
@@ -49,7 +51,8 @@ export function ProjectChatTabs({ variant = "agency" }) {
           ? { background: "var(--color-adm, #7c3aed)", borderColor: "var(--color-adm, #7c3aed)" }
           : {}}
       >
-        🛡 {adminLabel}
+        <Shield className="w-3.5 h-3.5 inline mr-1.5" />
+        {adminLabel}
       </button>
     </div>
   );

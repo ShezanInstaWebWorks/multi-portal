@@ -54,32 +54,32 @@ function currentIndex(flow, status) {
   return i >= 0 ? i : 0;
 }
 
-export function ProjectStages({ serviceSlug, status }) {
+export function ProjectStages({ serviceSlug, status, onStageClick = null, saving = false }) {
   const flow = flowFor(serviceSlug);
   const cur = currentIndex(flow, status);
+  const isInteractive = typeof onStageClick === "function";
 
   return (
     <ol className="relative pl-0">
+      {isInteractive && (
+        <p className="text-[0.7rem] text-muted mb-3">Click a stage to move the project.</p>
+      )}
       {flow.map((stage, i) => {
         const state = i < cur ? "done" : i === cur ? "current" : "pending";
-        return (
-          <li
-            key={stage.key + i}
-            className="relative pl-10 pb-5 last:pb-0"
-            style={{
-              borderLeft: i < flow.length - 1 ? "2px solid var(--color-border)" : "2px solid transparent",
-              marginLeft: 11,
-            }}
-          >
+        const isActive = stage.key === status;
+
+        const dotStyle =
+          state === "done"
+            ? { background: "var(--color-teal)", color: "white", boxShadow: "0 2px 8px rgba(0,184,169,0.3)" }
+            : state === "current"
+            ? { background: "var(--color-navy)", color: "white", boxShadow: "0 0 0 4px rgba(11,31,58,0.1), 0 2px 8px rgba(11,31,58,0.25)" }
+            : { background: "var(--color-lg)", color: "var(--color-muted)" };
+
+        const inner = (
+          <>
             <div
               className="absolute -left-3.25 top-0 w-6 h-6 rounded-full flex items-center justify-center text-[0.65rem] font-extrabold border-2 border-white"
-              style={
-                state === "done"
-                  ? { background: "var(--color-teal)", color: "white", boxShadow: "0 2px 8px rgba(0,184,169,0.3)" }
-                  : state === "current"
-                  ? { background: "var(--color-navy)", color: "white", boxShadow: "0 0 0 4px rgba(11,31,58,0.1), 0 2px 8px rgba(11,31,58,0.25)" }
-                  : { background: "var(--color-lg)", color: "var(--color-muted)" }
-              }
+              style={dotStyle}
             >
               {state === "done" ? "✓" : i + 1}
             </div>
@@ -105,6 +105,39 @@ export function ProjectStages({ serviceSlug, status }) {
               )}
             </div>
             <div className="text-[0.75rem] text-muted mt-0.5">{stage.desc}</div>
+          </>
+        );
+
+        const liBase = "relative pl-10 pb-5 last:pb-0";
+        const liStyle = {
+          borderLeft: i < flow.length - 1 ? "2px solid var(--color-border)" : "2px solid transparent",
+          marginLeft: 11,
+        };
+
+        if (isInteractive) {
+          return (
+            <li key={stage.key + i} className={liBase} style={liStyle}>
+              <button
+                type="button"
+                disabled={saving || isActive}
+                onClick={() => onStageClick(stage.key)}
+                className={`w-full text-left rounded-[8px] pr-2 py-1 -my-1 transition-colors ${
+                  isActive
+                    ? "cursor-default"
+                    : saving
+                    ? "opacity-50 cursor-not-allowed"
+                    : "hover:bg-off cursor-pointer"
+                }`}
+              >
+                {inner}
+              </button>
+            </li>
+          );
+        }
+
+        return (
+          <li key={stage.key + i} className={liBase} style={liStyle}>
+            {inner}
           </li>
         );
       })}

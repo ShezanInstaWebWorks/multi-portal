@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useClientPortalStore } from "@/lib/stores/useClientPortalStore";
 import { NexxttLogo } from "@/components/auth/NexxttLogo";
 import { NotificationBell } from "@/components/shared/NotificationBell";
-import { X } from "lucide-react";
+import { X, Home, FolderOpen, MessageSquare, Settings } from "lucide-react";
 
 export function ClientSidebarContent({ brand, userName, firstName, agencySlug, clientSlug, userId, mobile }) {
   const primaryColor = brand.primary_colour ?? "#0B1F3A";
@@ -12,10 +12,10 @@ export function ClientSidebarContent({ brand, userName, firstName, agencySlug, c
   const setSidebarOpen = useClientPortalStore((s) => s.setSidebarOpen);
 
   const navItems = [
-    { href: `/portal/${agencySlug}/${clientSlug}`, label: "Dashboard", icon: "🏠" },
-    { href: `/portal/${agencySlug}/${clientSlug}/projects`, label: "My Projects", icon: "📁" },
-    { href: `/portal/${agencySlug}/${clientSlug}/requests`, label: "Messages", icon: "💬" },
-    { href: `/portal/${agencySlug}/${clientSlug}/settings`, label: "Settings", icon: "⚙️" },
+    { href: `/portal/${agencySlug}/${clientSlug}`, label: "Dashboard", icon: Home },
+    { href: `/portal/${agencySlug}/${clientSlug}/projects`, label: "My Projects", icon: FolderOpen },
+    { href: `/portal/${agencySlug}/${clientSlug}/requests`, label: "Messages", icon: MessageSquare },
+    { href: `/portal/${agencySlug}/${clientSlug}/settings`, label: "Settings", icon: Settings },
   ];
 
   return (
@@ -91,13 +91,20 @@ export function ClientSidebarContent({ brand, userName, firstName, agencySlug, c
 }
 
 function NavItem({ item, onClick }) {
+  const Icon = item.icon;
   return (
     <Link
       href={item.href}
       onClick={onClick}
       className="group flex items-center gap-3 mx-2 my-0.5 px-3 py-2.5 rounded-lg text-[0.85rem] font-medium transition-all text-white/60 hover:text-white hover:bg-white/5"
     >
-      <span className="w-5 h-5 flex items-center justify-center text-lg">{item.icon}</span>
+      <span className="w-5 h-5 flex items-center justify-center shrink-0">
+        {typeof Icon === "string" ? (
+          <span className="text-lg">{Icon}</span>
+        ) : (
+          <Icon className="w-4 h-4" />
+        )}
+      </span>
       <span className="flex-1">{item.label}</span>
     </Link>
   );

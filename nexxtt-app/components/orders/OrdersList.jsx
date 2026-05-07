@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ChevronRight, Plus, Search } from "lucide-react";
+import { ChevronRight, Plus, Search, Hourglass } from "lucide-react";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { formatCents } from "@/lib/money";
 import { OrderDrawer } from "@/components/admin/OrderDrawer";
@@ -20,7 +20,7 @@ function jobOrAnyProject(statuses) {
 
 const FILTERS = [
   { key: "all",       label: "All Orders" },
-  { key: "pending",   label: "⏳ Pending Approval", match: (j) => j.status === "pending_admin_approval" },
+  { key: "pending",   label: "Pending Approval", icon: Hourglass, match: (j) => j.status === "pending_admin_approval" },
   { key: "active",    label: "Active",    match: jobOrAnyProject(["brief_pending", "in_progress", "revision_requested"]) },
   { key: "review",    label: "In Review", match: jobOrAnyProject(["in_review"]) },
   { key: "delivered", label: "Delivered", match: jobOrAnyProject(["delivered"]) },
@@ -68,7 +68,7 @@ export function OrdersList({ jobs }) {
           className="flex items-center gap-3 px-4 py-3 rounded-[12px] mb-5 border"
           style={{ background: "rgba(245,158,11,0.07)", borderColor: "rgba(245,158,11,0.3)" }}
         >
-          <span className="text-[1.1rem] shrink-0">⏳</span>
+          <Hourglass className="w-5 h-5 text-amber shrink-0" />
           <div className="flex-1 min-w-0">
             <div className="text-[0.88rem] font-bold text-dark">
               {pendingJobs.length} order{pendingJobs.length === 1 ? "" : "s"} awaiting admin approval
@@ -108,16 +108,18 @@ export function OrdersList({ jobs }) {
       <div className="flex gap-2 mb-5 flex-wrap">
         {FILTERS.map((f) => {
           const active = filter === f.key;
+          const Icon = f.icon;
           return (
             <button
               key={f.key}
               onClick={() => setFilter(f.key)}
-              className={`px-4 py-1.5 rounded-full text-[0.8rem] font-semibold transition-all border ${
+              className={`px-4 py-1.5 rounded-full text-[0.8rem] font-semibold transition-all border flex items-center gap-1.5 ${
                 active
                   ? "bg-teal text-white border-teal shadow-[0_2px_8px_rgba(0,184,169,0.25)]"
                   : "bg-white text-muted border-border hover:border-teal hover:text-teal"
               }`}
             >
+              {Icon && <Icon className="w-3.5 h-3.5" />}
               {f.label}{" "}
               <span className={active ? "opacity-80" : "opacity-50"}>
                 ({counts[f.key] ?? 0})

@@ -3,6 +3,7 @@ import { createAdminSupabaseClient, createServerSupabaseClient } from "@/lib/sup
 import { AdminTopbar } from "@/components/layout/AdminTopbar";
 import { AdminOrdersTable } from "@/components/admin/AdminOrdersTable";
 import { formatCents } from "@/lib/money";
+import { Hourglass } from "lucide-react";
 
 export const metadata = { title: "All Orders · Admin · nexxtt.io", robots: "noindex, nofollow" };
 
@@ -72,7 +73,7 @@ export default async function AdminOrdersPage({ searchParams }) {
               borderColor: "rgba(245,158,11,0.3)",
             }}
           >
-            <span className="text-[1.1rem]">⏳</span>
+            <Hourglass className="w-5 h-5 text-amber shrink-0" />
             <div className="flex-1">
               <div className="text-[0.88rem] font-bold text-dark">
                 {pendingCount} order{pendingCount === 1 ? "" : "s"} awaiting your approval
@@ -95,7 +96,7 @@ export default async function AdminOrdersPage({ searchParams }) {
         <div className="flex gap-2 flex-wrap mb-5">
           {[
             { label: "All orders",       value: null },
-            { label: "⏳ Pending approval", value: "pending_admin_approval" },
+            { label: "Pending approval", value: "pending_admin_approval", icon: Hourglass },
             { label: "Brief pending",    value: "brief_pending" },
             { label: "In progress",      value: "in_progress" },
             { label: "In review",        value: "in_review" },
@@ -103,16 +104,18 @@ export default async function AdminOrdersPage({ searchParams }) {
             { label: "Rejected",         value: "rejected" },
           ].map((tab) => {
             const active = statusFilter === tab.value;
+            const Icon = tab.icon;
             return (
               <a
                 key={tab.label}
                 href={tab.value ? `?status=${tab.value}` : "?"}
-                className={`px-3 py-1.5 rounded-full text-[0.78rem] font-semibold border transition-colors ${
+                className={`px-3 py-1.5 rounded-full text-[0.78rem] font-semibold border transition-colors flex items-center gap-1.5 ${
                   active
                     ? "bg-navy text-white border-navy"
                     : "bg-white text-muted border-border hover:border-navy hover:text-dark"
                 }`}
               >
+                {Icon && <Icon className="w-3.5 h-3.5" />}
                 {tab.label}
                 {tab.value === "pending_admin_approval" && pendingCount > 0 && (
                   <span

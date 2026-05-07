@@ -2,25 +2,25 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { X } from "lucide-react";
+import { X, Shield, MessageSquare, ClipboardList, Building2, Users, Handshake, Sparkles, Wallet, Settings, Mail } from "lucide-react";
 import { useAgencyStore } from "@/lib/stores/useAgencyStore";
 import { NexxttLogo } from "@/components/auth/NexxttLogo";
 
 const OVERVIEW = [
-  { href: "/admin",         icon: "🛡️", label: "Admin Dashboard" },
-  { href: "/admin/requests", icon: "💬", label: "Requests & Chat" },
-  { href: "/admin/orders",   icon: "📋", label: "All Orders" },
+  { href: "/admin",         icon: Shield, label: "Admin Dashboard" },
+  { href: "/admin/requests", icon: MessageSquare, label: "Requests & Chat" },
+  { href: "/admin/orders",   icon: ClipboardList, label: "All Orders" },
 ];
 const PORTALS = [
-  { href: "/admin/agencies",  icon: "🏢", label: "Agencies" },
-  { href: "/admin/clients",    icon: "👥", label: "Clients" },
-  { href: "/admin/referrals",  icon: "🤝", label: "Referral Partners" },
+  { href: "/admin/agencies",  icon: Building2, label: "Agencies" },
+  { href: "/admin/clients",    icon: Users, label: "Clients" },
+  { href: "/admin/referrals",  icon: Handshake, label: "Referral Partners" },
 ];
 const PLATFORM = [
-  { href: "/admin/services",       icon: "✦",  label: "Service Catalog" },
-  { href: "/admin/finance",         icon: "💰", label: "Platform Finance" },
-  { href: "/admin/settings",       icon: "⚙️", label: "Platform Settings" },
-  { href: "/admin/email-preview",  icon: "📧", label: "Email Preview" },
+  { href: "/admin/services",       icon: Sparkles, label: "Service Catalog" },
+  { href: "/admin/finance",         icon: Wallet, label: "Platform Finance" },
+  { href: "/admin/settings",       icon: Settings, label: "Platform Settings" },
+  { href: "/admin/email-preview",  icon: Mail, label: "Email Preview" },
 ];
 
 const ACCENT = "#7c3aed"; // --color-adm
@@ -137,6 +137,8 @@ function AdminItem({ item, pathname }) {
       ? pathname === "/admin"
       : pathname === item.href || pathname.startsWith(item.href + "/");
 
+  const Icon = item.icon;
+
   return (
     <Link
       href={item.href}
@@ -166,8 +168,12 @@ function AdminItem({ item, pathname }) {
         }
       }}
     >
-      <span className="w-4 h-4 flex items-center justify-center text-[0.9rem] shrink-0">
-        {item.icon}
+      <span className="w-4 h-4 flex items-center justify-center shrink-0">
+        {typeof Icon === "string" ? (
+          <span className="text-[0.9rem]">{Icon}</span>
+        ) : (
+          <Icon className="w-4 h-4" />
+        )}
       </span>
       <span className="flex-1">{item.label}</span>
     </Link>

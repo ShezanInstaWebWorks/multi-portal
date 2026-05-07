@@ -4,20 +4,22 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAgencyStore } from "@/lib/stores/useAgencyStore";
 import { NexxttLogo } from "@/components/auth/NexxttLogo";
-import { X } from "lucide-react";
+import { X, Users, Mail, Link2, TrendingUp, Wallet, Palette, Home, MessageSquare, PlusCircle, ClipboardList, LogOut } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
 const CLIENTS_NAV = [
-  { href: "/agency/clients",               icon: "👥", label: "Client Manager" },
-  { href: "/agency/clients/invite",        icon: "✉️", label: "Invite Client" },
-  { href: "/agency/settings/portal-preview", icon: "🔗", label: "Client Portal Preview" },
+  { href: "/agency/clients",               icon: Users, label: "Client Manager" },
+  { href: "/agency/clients/invite",        icon: Mail, label: "Invite Client" },
+  { href: "/agency/settings/portal-preview", icon: Link2, label: "Client Portal Preview" },
 ];
 const FINANCE_NAV = [
-  { href: "/agency/finance/profit",  icon: "📈", label: "Profit Dashboard" },
-  { href: "/agency/finance/balance", icon: "💰", label: "Balance" },
+  { href: "/agency/finance/profit",  icon: TrendingUp, label: "Profit Dashboard" },
+  { href: "/agency/finance/balance", icon: Wallet, label: "Balance" },
 ];
 const SETTINGS_NAV = [
-  { href: "/agency/settings", icon: "🎨", label: "Brand Settings" },
+  { href: "/agency/settings", icon: Palette, label: "Brand Settings" },
 ];
 
 export function AgencySidebar({
@@ -29,6 +31,7 @@ export function AgencySidebar({
   ordersCount = null,
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const setSidebarOpen = useAgencyStore((s) => s.setSidebarOpen);
   const [open, setOpen] = useState({
     clients:  CLIENTS_NAV.some((i) => pathname.startsWith(i.href)),
@@ -37,12 +40,12 @@ export function AgencySidebar({
   });
 
   const MAIN_NAV = [
-    { href: "/agency/dashboard",  icon: "🏠", label: "Dashboard" },
-    { href: "/agency/requests",   icon: "💬", label: "Requests & Chat" },
-    { href: "/agency/orders/new", icon: "✚",  label: "New Order" },
+    { href: "/agency/dashboard",  icon: Home, label: "Dashboard" },
+    { href: "/agency/requests",   icon: MessageSquare, label: "Chat" },
+    { href: "/agency/orders/new", icon: PlusCircle,  label: "New Order" },
     {
       href: "/agency/orders",
-      icon: "📋",
+      icon: ClipboardList,
       label: "All Orders",
       badge: ordersCount != null && ordersCount > 0 ? String(ordersCount) : null,
     },
@@ -136,6 +139,16 @@ export function AgencySidebar({
             </div>
             <div className="text-[0.7rem] text-white/50">{roleLabel}</div>
           </div>
+          <button
+            onClick={async () => {
+              await createClient().auth.signOut();
+              router.push("/login");
+            }}
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-colors shrink-0"
+            title="Sign out"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </div>
@@ -183,6 +196,8 @@ function NavItem({ item, pathname }) {
       ? pathname === item.href
       : pathname === item.href || pathname.startsWith(item.href + "/");
 
+  const Icon = item.icon;
+
   return (
     <Link
       href={item.href}
@@ -199,13 +214,17 @@ function NavItem({ item, pathname }) {
           : undefined
       }
     >
-      <span className="w-4 h-4 flex items-center justify-center text-[0.9rem] shrink-0">
-        {item.icon}
+      <span className="w-4 h-4 flex items-center justify-center shrink-0">
+        {typeof Icon === "string" ? (
+          <span className="text-[0.9rem]">{Icon}</span>
+        ) : (
+          <Icon className="w-4 h-4" />
+        )}
       </span>
       <span className="flex-1">{item.label}</span>
       {item.badge && (
         <span
-          className="px-1.5 py-[1px] rounded-md text-[0.65rem] font-bold"
+          className="px-1.5 py-px rounded-md text-[0.65rem] font-bold"
           style={{ background: "rgba(0,184,169,0.18)", color: "var(--color-teal)" }}
         >
           {item.badge}

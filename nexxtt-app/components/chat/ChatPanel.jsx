@@ -121,7 +121,9 @@ export function ChatPanel({
 
   const heightClass = variant === "wide"
     ? "min-h-[520px] max-h-[720px]"
-    : "min-h-[420px] max-h-[640px]";
+    : variant === "compact"
+      ? "min-h-[180px] max-h-[260px]"
+      : "min-h-[420px] max-h-[640px]";
 
   return (
     <div className={`flex flex-col bg-white border border-border rounded-[12px] overflow-hidden ${heightClass}`}>

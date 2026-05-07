@@ -1,8 +1,13 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { resolveAgencyContext } from "@/lib/impersonation";
 import { AgencyTopbar } from "@/components/layout/AgencyTopbar";
+import { EmptyState } from "@/components/shared/EmptyState";
 import { ClientList } from "@/components/clients/ClientList";
+import { Users, Mail } from "lucide-react";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { resolveAgencyContext } from "@/lib/impersonation";
 
@@ -66,7 +71,7 @@ export default async function ClientsPage() {
       <main id="main-content" className="flex-1 px-4 sm:px-6 lg:px-8 py-5 lg:py-7 pb-20 lg:pb-8">
         {clients.length === 0 ? (
           <EmptyState
-            icon="👥"
+            icon={<Users className="w-10 h-10" />}
             title="No clients yet"
             description="Invite your first client — they'll get a branded portal where they can see progress and approve deliverables."
             action={
@@ -78,7 +83,7 @@ export default async function ClientsPage() {
                   boxShadow: "0 2px 10px rgba(0,184,169,0.25)",
                 }}
               >
-                ✉️ Invite client
+                <Mail className="w-4 h-4" /> Invite client
               </Link>
             }
           />

@@ -5,6 +5,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { DirectTopbar } from "@/components/layout/DirectTopbar";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { DirectOrdersList } from "@/components/direct/DirectOrdersList";
+import { ClipboardList } from "lucide-react";
 
 export const metadata = { title: "My Orders · nexxtt.io", robots: "noindex, nofollow" };
 
@@ -45,7 +46,7 @@ export default async function DirectOrdersPage() {
 
         {(!jobs || jobs.length === 0) ? (
           <EmptyState
-            icon="📋"
+            icon={<ClipboardList className="w-10 h-10" />}
             title="No orders yet"
             description="Pick the service you need and we'll start work as soon as the brief is in."
             action={

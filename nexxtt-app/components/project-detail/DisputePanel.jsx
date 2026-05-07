@@ -40,7 +40,7 @@ export function DisputePanel({ projectId, status, viewerIsAdmin }) {
           border: "1.5px solid rgba(239,68,68,0.3)",
         }}
       >
-        <div className="text-[1.1rem] shrink-0">⚑</div>
+        <Flag className="w-5 h-5 text-red shrink-0 mt-0.5" />
         <div className="flex-1 min-w-[200px]">
           <div className="text-[0.88rem] font-bold text-dark">
             This project is in dispute
@@ -60,7 +60,7 @@ export function DisputePanel({ projectId, status, viewerIsAdmin }) {
       {!showForm ? (
         <button
           onClick={() => setShowForm(true)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[0.75rem] font-semibold transition-colors"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 mb-4 rounded-md text-[0.75rem] font-semibold transition-colors"
           style={{
             background: "rgba(239,68,68,0.08)",
             border: "1px solid rgba(239,68,68,0.25)",

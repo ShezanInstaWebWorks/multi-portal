@@ -90,9 +90,14 @@ export default async function AgencyProjectDetailPage({ params, searchParams }) 
     ? await getLatestRevisionNote(adminClient, project.id)
     : null;
   const activeChatId = chatThread === "admin" ? adminConversationId : conversationId;
-  const { data: messages } = activeChatId
-    ? await adminClient.from("messages").select("*").eq("conversation_id", activeChatId).order("created_at", { ascending: true }).limit(200)
-    : { data: [] };
+  const [{ data: messages }, { data: overviewMessages }] = await Promise.all([
+    activeChatId
+      ? adminClient.from("messages").select("*").eq("conversation_id", activeChatId).order("created_at", { ascending: true }).limit(200)
+      : Promise.resolve({ data: [] }),
+    conversationId
+      ? adminClient.from("messages").select("*").eq("conversation_id", conversationId).order("created_at", { ascending: true }).limit(200)
+      : Promise.resolve({ data: [] }),
+  ]);
 
   return (
     <>
@@ -117,6 +122,9 @@ export default async function AgencyProjectDetailPage({ params, searchParams }) 
             tabsSlot={<ProjectTabs />}
             revisionNote={revisionNote}
             siblings={siblings}
+            conversationId={conversationId}
+            initialMessages={overviewMessages ?? []}
+            currentUserId={ctx.user.id}
           />
         )}
 

@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import { AgencyTopbar } from "@/components/layout/AgencyTopbar";
-import { OrdersList } from "@/components/orders/OrdersList";
-import { EmptyState } from "@/components/shared/EmptyState";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { resolveAgencyContext } from "@/lib/impersonation";
+import { AgencyTopbar } from "@/components/layout/AgencyTopbar";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { OrdersList } from "@/components/orders/OrdersList";
+import { ClipboardList } from "lucide-react";
 
 export const metadata = {
   title: "Orders · nexxtt.io",
@@ -36,7 +38,7 @@ export default async function OrdersPage() {
       <main id="main-content" className="flex-1 px-4 sm:px-6 lg:px-8 py-5 lg:py-7 pb-20 lg:pb-8">
         {!jobs || jobs.length === 0 ? (
           <EmptyState
-            icon="📋"
+            icon={<ClipboardList className="w-10 h-10" />}
             title="No orders yet"
             description="Place your first order and it'll show up here — cost, retail, profit and progress all in one view."
             action={

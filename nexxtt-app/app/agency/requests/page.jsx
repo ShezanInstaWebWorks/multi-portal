@@ -2,7 +2,6 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { AgencyTopbar } from "@/components/layout/AgencyTopbar";
 import { RequestCard } from "@/components/project-requests/RequestCard";
-import { RequestForm } from "@/components/project-requests/RequestForm";
 import { RequestsRealtime } from "@/components/project-requests/RequestsRealtime";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { availableActions } from "@/lib/request-actions";
@@ -25,9 +24,6 @@ export default async function AgencyRequestsPage({ searchParams }) {
   const selectedClientId = typeof resolved.client === "string" ? resolved.client : null;
   const thread = typeof resolved.thread === "string" ? resolved.thread : null; // "admin" → agency↔admin thread
   const selectedTab = typeof resolved.tab === "string" ? resolved.tab : "active";
-  // Top-level view: "compose" = file a new request, "list" = manage existing
-  // ones. Defaults to list since that's where existing work lives.
-  const selectedView = resolved.view === "compose" ? "compose" : "list";
 
   const [requestsRes, servicesRes, packagesRes, conversationsRes, adminThreadRes] = await Promise.all([
     ctx.supabase
@@ -118,21 +114,11 @@ export default async function AgencyRequestsPage({ searchParams }) {
   // AND the top-level view tab.
   const tabHref = (key) => {
     const params = new URLSearchParams();
-    params.set("view", "list");
     params.set("tab", key);
     if (isAdminThread) params.set("thread", "admin");
     else if (activeConversation?.client_id) params.set("client", activeConversation.client_id);
     return `/agency/requests?${params.toString()}`;
   };
-  const viewHref = (view) => {
-    const params = new URLSearchParams();
-    params.set("view", view);
-    if (view === "list") params.set("tab", tabKey);
-    if (isAdminThread) params.set("thread", "admin");
-    else if (activeConversation?.client_id) params.set("client", activeConversation.client_id);
-    return `/agency/requests?${params.toString()}`;
-  };
-
   return (
     <>
       <Suspense fallback={<div className="h-topbar bg-white border-b border-border" />}>
@@ -214,49 +200,6 @@ export default async function AgencyRequestsPage({ searchParams }) {
               </div>
             ) : (
               <>
-                {/* Top-level view switcher: Compose vs Manage */}
-                <div className="flex gap-1 p-1 rounded-[12px] bg-off border border-border self-start">
-                  <a
-                    href={viewHref("compose")}
-                    className={`px-3.5 py-1.5 rounded-[10px] text-[0.82rem] font-semibold transition-colors ${
-                      selectedView === "compose"
-                        ? "bg-white text-dark shadow-[0_1px_3px_rgba(11,31,58,0.12)]"
-                        : "text-muted hover:text-dark"
-                    }`}
-                  >
-                    + New request
-                  </a>
-                  <a
-                    href={viewHref("list")}
-                    className={`px-3.5 py-1.5 rounded-[10px] text-[0.82rem] font-semibold transition-colors ${
-                      selectedView === "list"
-                        ? "bg-white text-dark shadow-[0_1px_3px_rgba(11,31,58,0.12)]"
-                        : "text-muted hover:text-dark"
-                    }`}
-                  >
-                    Requests
-                    <span className={`ml-1.5 ${selectedView === "list" ? "opacity-70" : "opacity-50"}`}>
-                      ({counts.all})
-                    </span>
-                  </a>
-                </div>
-
-                {selectedView === "compose" ? (
-                  activeConversation?.client_id ? (
-                    <RequestForm
-                      services={services}
-                      packages={packages}
-                      showCost
-                      defaultClientId={activeConversation.client_id}
-                      compact
-                    />
-                  ) : (
-                    <div className="text-sm text-muted bg-white border border-border rounded-[12px] p-5 text-center">
-                      Pick a client on the left to file a new request.
-                    </div>
-                  )
-                ) : (
-                  <>
                     <div className="flex gap-2 flex-wrap">
                       {[
                         { key: "needs_review", label: "Needs Your Review" },
@@ -313,8 +256,6 @@ export default async function AgencyRequestsPage({ searchParams }) {
                         </div>
                       ))
                     )}
-                  </>
-                )}
               </>
             )}
           </div>

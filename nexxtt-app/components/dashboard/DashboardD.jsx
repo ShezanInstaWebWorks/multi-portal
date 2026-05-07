@@ -5,7 +5,7 @@ import { tierFor, tierProgress } from "@/lib/priority";
 import { formatCents } from "@/lib/money";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { Wallet } from "lucide-react";
+import { Wallet, FolderOpen, Zap, CheckCircle2, Coins, ClipboardList } from "lucide-react";
 
 // Wireframe s04d — command-center: 4 stat boxes, active-orders timeline,
 // activity feed + earnings chart. Now wired to live, tenant-scoped data.
@@ -163,28 +163,28 @@ export function DashboardD({ agency, firstName, jobs = [], clientsCount = 0 }) {
     {
       label: "Total Projects",
       value: String(stats.totalProjects || jobs.length),
-      icon: "📁",
+      icon: FolderOpen,
       bgColor: "bg-blue-50",
       borderColor: "border-l-blue-500",
     },
     {
       label: "Active Projects",
       value: String(stats.activeProjects),
-      icon: "⚡",
+      icon: Zap,
       bgColor: "bg-emerald-50",
       borderColor: "border-l-emerald-500",
     },
     {
       label: "Completed",
       value: String(stats.completedProjects),
-      icon: "✅",
+      icon: CheckCircle2,
       bgColor: "bg-purple-50",
       borderColor: "border-l-purple-500",
     },
     {
       label: "Revenue",
       value: formatCents(stats.totalRevenue),
-      icon: "💰",
+      icon: Coins,
       bgColor: "bg-amber-50",
       borderColor: "border-l-amber-500",
     },
@@ -285,18 +285,21 @@ export function DashboardD({ agency, firstName, jobs = [], clientsCount = 0 }) {
 
       {/* 4 stat boxes */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {STATS.map((s, idx) => (
-          <div
-            key={s.label}
-            className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-medium text-gray-500">{s.label}</span>
-              <span className="text-xl">{s.icon}</span>
+        {STATS.map((s, idx) => {
+          const Icon = s.icon;
+          return (
+            <div
+              key={s.label}
+              className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-medium text-gray-500">{s.label}</span>
+                <Icon className="w-5 h-5 text-gray-400" />
+              </div>
+              <div className="text-2xl font-bold text-gray-900">{s.value}</div>
             </div>
-            <div className="text-2xl font-bold text-gray-900">{s.value}</div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Projects Table */}
@@ -374,7 +377,7 @@ export function DashboardD({ agency, firstName, jobs = [], clientsCount = 0 }) {
           {timelineRows.length === 0 ? (
             <div className="p-6">
               <EmptyState
-                icon="📋"
+                icon={<ClipboardList className="w-10 h-10" />}
                 title="No active orders"
                 description={
                   jobs.length === 0

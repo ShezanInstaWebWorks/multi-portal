@@ -3,6 +3,7 @@ import { createServerSupabaseClient, createAdminSupabaseClient } from "@/lib/sup
 import { RefTopbar } from "@/components/layout/RefTopbar";
 import { RefDashboard } from "@/components/referral/RefDashboard";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { Handshake } from "lucide-react";
 
 export const metadata = {
   title: "Referral Dashboard · nexxtt.io",
@@ -37,7 +38,7 @@ export default async function ReferralDashboardPage() {
         <RefTopbar userName={`${profile?.first_name ?? ""} ${profile?.last_name ?? ""}`.trim()} />
         <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6">
           <EmptyState
-            icon="🤝"
+            icon={<Handshake className="w-10 h-10" />}
             title="No referral partner profile yet"
             description="Reach out to nexxtt.io to activate your referral partner account."
           />

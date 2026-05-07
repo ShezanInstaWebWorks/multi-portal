@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Check, Copy, Send } from "lucide-react";
+import { ArrowLeft, Check, Copy, Send, Mail, Lock, Globe, ClipboardList } from "lucide-react";
 import { slugify, isValidSlug } from "@/lib/slug";
 
 const INDUSTRIES = [
@@ -342,10 +342,10 @@ function Step1Details({ draft, setDraft, agencyBrandName, portalUrl, INDUSTRIES 
           What your client gets
         </div>
         <div className="flex flex-col gap-2.5">
-          <Benefit icon="📧" title="Branded invite email"    desc={`Sent from ${agencyBrandName}, not nexxtt.io`} />
-          <Benefit icon="🔐" title="Temporary password"      desc="Generated on invite. Client signs in instantly — no setup flow required." />
-          <Benefit icon="🌐" title="Their own portal URL"    desc={portalUrl} />
-          <Benefit icon="📋" title="Live project dashboard"  desc="Track progress, review drafts, download final files." />
+          <Benefit icon={Mail} title="Branded invite email"    desc={`Sent from ${agencyBrandName}, not nexxtt.io`} />
+          <Benefit icon={Lock} title="Temporary password"      desc="Generated on invite. Client signs in instantly — no setup flow required." />
+          <Benefit icon={Globe} title="Their own portal URL"    desc={portalUrl} />
+          <Benefit icon={ClipboardList} title="Live project dashboard"  desc="Track progress, review drafts, download final files." />
         </div>
         <div
           className="mt-4 rounded-[10px] px-3 py-2.5 text-[0.72rem] text-white/60 leading-relaxed"
@@ -442,7 +442,8 @@ function Step2Customize({ draft, setDraft, agencyBrandName, agencyPortalSlug, de
           className="text-[0.75rem] font-bold uppercase text-muted mb-2.5"
           style={{ letterSpacing: "0.08em" }}
         >
-          📧 Live email preview
+          <Mail className="w-3.5 h-3.5 inline mr-1.5" />
+          Live email preview
         </div>
         <EmailPreview draft={draft} agencyBrandName={agencyBrandName} portalUrl={portalUrl} />
       </div>
@@ -517,7 +518,8 @@ function Step3Confirm({ draft, agencyBrandName, portalUrl, error }) {
           className="text-[0.75rem] font-bold uppercase text-muted mb-2.5"
           style={{ letterSpacing: "0.08em" }}
         >
-          📧 Email being sent
+          <Mail className="w-3.5 h-3.5 inline mr-1.5" />
+          Email being sent
         </div>
         <EmailPreview draft={draft} agencyBrandName={agencyBrandName} portalUrl={portalUrl} compact />
       </div>
@@ -671,16 +673,21 @@ function AccessOption({ selected, onClick, title, desc }) {
 }
 
 function Benefit({ icon, title, desc }) {
+  const Icon = icon;
   return (
     <div className="flex items-start gap-2.5">
       <div
-        className="w-7 h-7 rounded-lg flex items-center justify-center text-[0.85rem] shrink-0"
+        className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
         style={{
           background: "rgba(0,184,169,0.15)",
           border: "1px solid rgba(0,184,169,0.25)",
         }}
       >
-        {icon}
+        {typeof Icon === "string" ? (
+          <span className="text-[0.85rem]">{Icon}</span>
+        ) : (
+          <Icon className="w-3.5 h-3.5 text-teal" />
+        )}
       </div>
       <div>
         <div className="text-[0.82rem] font-semibold text-white">{title}</div>

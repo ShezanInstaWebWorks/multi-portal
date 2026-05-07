@@ -6,6 +6,7 @@ import { DirectTopbar } from "@/components/layout/DirectTopbar";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { WalletCard } from "@/components/wallet/WalletCard";
+import { ClipboardList } from "lucide-react";
 
 export const metadata = {
   title: "Dashboard · nexxtt.io",
@@ -117,7 +118,7 @@ export default async function DirectDashboardPage() {
         {/* Projects list */}
         {allProjects.length === 0 ? (
           <EmptyState
-            icon="📋"
+            icon={<ClipboardList className="w-10 h-10" />}
             title="No projects yet"
             description="Place your first order — once briefing's done, you'll see live progress here."
             action={

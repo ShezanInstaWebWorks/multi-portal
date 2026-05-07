@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { AdminTopbar } from "@/components/layout/AdminTopbar";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { formatCents } from "@/lib/money";
+import { Building2, Handshake, Users, Flag, Banknote, Construction, User } from "lucide-react";
 
 export const metadata = {
   title: "Admin · nexxtt.io",
@@ -263,7 +264,7 @@ export default async function AdminDashboardPage() {
               <div className="flex flex-col gap-2">
                 <QuickAction
                   href="/admin/agencies"
-                  icon="🏢"
+                  icon={Building2}
                   label={`Approve pending ${pendingAgencies === 1 ? "agency" : "agencies"}`}
                   color="#a78bfa"
                   bg="rgba(124,58,237,0.18)"
@@ -271,7 +272,7 @@ export default async function AdminDashboardPage() {
                 />
                 <QuickAction
                   href="/admin/finance"
-                  icon="💸"
+                  icon={Banknote}
                   label="Process referral payouts"
                   color="var(--color-amber)"
                   bg="rgba(245,158,11,0.15)"
@@ -279,7 +280,7 @@ export default async function AdminDashboardPage() {
                 />
                 <QuickAction
                   href="/admin/orders?status=disputed"
-                  icon="⚑"
+                  icon={Flag}
                   label="Resolve disputed orders"
                   color="var(--color-red)"
                   bg="rgba(239,68,68,0.12)"
@@ -299,22 +300,22 @@ export default async function AdminDashboardPage() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <PortalTile
               href="/admin/agencies"
-              icon="🏢" label="AGENCY PORTAL" count={activeAgencies} sub="agencies active"
+              icon={Building2} label="AGENCY PORTAL" count={activeAgencies} sub="agencies active"
               bg="var(--color-teal-bg)" border="var(--color-teal-bdr)" color="var(--color-teal)"
             />
             <PortalTile
               href="/admin/clients"
-              icon="👤" label="CLIENT PORTAL"  count={clientsRes.data?.length ?? 0} sub="agency clients active"
+              icon={User} label="CLIENT PORTAL"  count={clientsRes.data?.length ?? 0} sub="agency clients active"
               bg="rgba(91,108,248,0.07)" border="rgba(91,108,248,0.18)" color="#5b6cf8"
             />
             <PortalTile
               href="/admin/referrals"
-              icon="🤝" label="REFERRAL PORTAL" count={referralPartners} sub="referral partners"
+              icon={Handshake} label="REFERRAL PORTAL" count={referralPartners} sub="referral partners"
               bg="rgba(245,158,11,0.08)" border="rgba(245,158,11,0.2)" color="var(--color-amber)"
             />
             <PortalTile
               href="/admin/clients"
-              icon="🏗️" label="DIRECT PORTAL"  count={directRes.data?.length ?? 0} sub="direct clients"
+              icon={Construction} label="DIRECT PORTAL"  count={directRes.data?.length ?? 0} sub="direct clients"
               bg="rgba(16,185,129,0.08)" border="rgba(16,185,129,0.2)" color="var(--color-green)"
             />
           </div>
@@ -363,26 +364,34 @@ function PortalPill({ kind }) {
 }
 
 function QuickAction({ href, icon, label, color, bg, border }) {
+  const Icon = icon;
   return (
     <Link
       href={href}
       className="rounded-lg px-3 py-2 text-[0.82rem] font-semibold flex items-center gap-2 transition-transform hover:-translate-y-px"
       style={{ background: bg, color, border: `1px solid ${border}` }}
     >
-      <span>{icon}</span>
+      {typeof Icon === "string" ? <span>{Icon}</span> : <Icon className="w-4 h-4" />}
       <span>{label}</span>
     </Link>
   );
 }
 
 function PortalTile({ href, icon, label, count, sub, bg, border, color }) {
+  const Icon = icon;
   return (
     <Link
       href={href}
       className="rounded-[12px] p-4 text-center transition-transform hover:-translate-y-0.5"
       style={{ background: bg, border: `1px solid ${border}` }}
     >
-      <div className="text-[1.3rem] mb-1">{icon}</div>
+      <div className="mb-1">
+        {typeof Icon === "string" ? (
+          <span className="text-[1.3rem]">{Icon}</span>
+        ) : (
+          <Icon className="w-6 h-6 mx-auto" style={{ color }} />
+        )}
+      </div>
       <div
         className="text-[0.68rem] font-bold uppercase mb-0.5"
         style={{ color, letterSpacing: "0.08em" }}

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { resolvePortalContext } from "@/lib/portal-context";
 import { PortalTopbar } from "@/components/layout/PortalTopbar";
 import { ClientOrderList } from "@/components/client-portal/ClientOrderList";
+import { ClipboardList } from "lucide-react";
 
 function computeClientStats(jobs) {
   let totalProjects = 0;
@@ -118,7 +119,7 @@ export default async function ClientPortalHomePage({ params }) {
         {/* Orders + projects grouped list */}
         {!hasJobs ? (
           <div className="flex flex-col items-center justify-center py-16 text-center px-4">
-            <div className="text-5xl mb-4 opacity-30">📋</div>
+            <ClipboardList className="w-12 h-12 mb-4 text-muted opacity-30" />
             <h3
               className="font-display font-bold text-lg mb-2"
               style={{ color: brand.accent_colour ?? "var(--color-teal)" }}

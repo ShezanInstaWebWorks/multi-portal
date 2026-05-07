@@ -7,6 +7,7 @@ import { AdminNewDirectRequestPanel } from "@/components/project-requests/AdminN
 import { AdminWalletAdjustPanel } from "@/components/wallet/AdminWalletAdjustPanel";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { availableActions } from "@/lib/request-actions";
+import { ClipboardList, MessageSquare, Building2, User } from "lucide-react";
 
 export const metadata = { title: "Requests · Admin · nexxtt.io", robots: "noindex, nofollow" };
 
@@ -191,7 +192,8 @@ export default async function AdminRequestsPage({ searchParams }) {
                 : "text-muted hover:text-dark"
             }`}
           >
-            📋 Requests
+            <ClipboardList className="w-4 h-4 inline mr-1.5" />
+            Requests
             <span className={`ml-1.5 ${selectedView === "requests" ? "opacity-70" : "opacity-50"}`}>
               ({counts.attention + counts.approval})
             </span>
@@ -204,7 +206,8 @@ export default async function AdminRequestsPage({ searchParams }) {
                 : "text-muted hover:text-dark"
             }`}
           >
-            💬 Chat
+            <MessageSquare className="w-4 h-4 inline mr-1.5" />
+            Chat
             <span className={`ml-1.5 ${selectedView === "chat" ? "opacity-70" : "opacity-50"}`}>
               ({agencyAdminConversations.length + directConversations.length})
             </span>
@@ -310,10 +313,10 @@ export default async function AdminRequestsPage({ searchParams }) {
                       }`}
                     >
                       <span
-                        className="w-6 h-6 rounded-md flex items-center justify-center text-[0.78rem] shrink-0 mt-0.5"
+                        className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 mt-0.5"
                         style={{ background: "rgba(0,184,169,0.12)", color: "var(--color-teal)" }}
                       >
-                        🏢
+                        <Building2 className="w-3.5 h-3.5" />
                       </span>
                       <div className="min-w-0">
                         <div className="font-bold truncate">{name}</div>

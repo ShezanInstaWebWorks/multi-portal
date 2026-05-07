@@ -1,7 +1,11 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { resolveAgencyContext } from "@/lib/impersonation";
 import { AgencyTopbar } from "@/components/layout/AgencyTopbar";
+import { EmptyState } from "@/components/shared/EmptyState";
 import { ProfitDashboard } from "@/components/finance/ProfitDashboard";
+import { TrendingUp } from "lucide-react";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { resolveAgencyContext } from "@/lib/impersonation";
 
@@ -62,7 +66,7 @@ export default async function ProfitPage() {
       <main id="main-content" className="flex-1 px-4 sm:px-6 lg:px-8 py-5 lg:py-7 pb-20 lg:pb-8">
         {jobs.length === 0 ? (
           <EmptyState
-            icon="📈"
+            icon={<TrendingUp className="w-10 h-10" />}
             title="No profit data yet"
             description="Once you place your first order, this dashboard will show revenue, profit, and margin by month and by client."
           />

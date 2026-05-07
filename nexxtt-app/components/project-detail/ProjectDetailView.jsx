@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { ChatPanel } from "@/components/chat/ChatPanel";
 import { ArrowLeft } from "lucide-react";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { formatCents } from "@/lib/money";
@@ -25,33 +27,63 @@ export function ProjectDetailView({
   viewer, project, service, brief, files, job, backHref, backLabel,
   viewerIsAdmin = false,
   tabsSlot = null,
-  revisionNote = null, // { note, requestedAt, requesterId } — shown when status=revision_requested
-  siblings = null,    // { items: [{ id, status, service:{name,icon,slug} }], baseHref: "/admin/projects" }
+  controlsSlot = null,
+  revisionNote = null,
+  siblings = null,
+  conversationId = null,
+  initialMessages = [],
+  currentUserId = null,
 }) {
-  const pct = progressPct(service?.slug, project.status);
+  const router = useRouter();
+  const [liveStatus, setLiveStatus] = useState(project.status);
+  const [stageSaving, setStageSaving] = useState(false);
+  const [stageError, setStageError] = useState(null);
+
+  async function handleStageClick(newStatus) {
+    if (newStatus === liveStatus || stageSaving) return;
+    const prev = liveStatus;
+    setLiveStatus(newStatus);
+    setStageSaving(true);
+    setStageError(null);
+    const res = await fetch(`/api/admin/projects/${project.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: newStatus }),
+    });
+    setStageSaving(false);
+    if (!res.ok) {
+      setLiveStatus(prev);
+      const payload = await res.json().catch(() => ({}));
+      setStageError(payload.error ?? "Failed to update stage.");
+    } else {
+      router.refresh();
+    }
+  }
+
+  const pct = progressPct(service?.slug, liveStatus);
   const profit = (project.retail_price_cents ?? 0) - (project.cost_price_cents ?? 0);
   const showCost = viewer === "agency";
 
   // agency_client and direct_client sign off when project is in_review.
   const canClientAct =
     (viewer === "agency_client" || viewer === "direct_client") &&
-    project.status === "in_review";
+    liveStatus === "in_review";
 
   // Agency/admin can mark a brief_pending project as in_progress.
   const canStartWork =
     (viewer === "agency" || viewerIsAdmin) &&
-    project.status === "brief_pending";
+    liveStatus === "brief_pending";
 
   // Admin submits in_progress → agency_review (for agency to review before client).
-  const canAdminSubmitToAgency = viewerIsAdmin && project.status === "in_progress";
+  const canAdminSubmitToAgency = viewerIsAdmin && liveStatus === "in_progress";
 
   // Agency submits agency_review → in_review (forwards to client after reviewing admin's work).
   const canAgencyForwardToClient =
-    viewer === "agency" && !viewerIsAdmin && project.status === "agency_review";
+    viewer === "agency" && !viewerIsAdmin && liveStatus === "agency_review";
 
   // Agency submits in_progress → in_review directly (agency-only workflow, no admin step).
   const canAgencyDirectSubmit =
-    viewer === "agency" && !viewerIsAdmin && project.status === "in_progress";
+    viewer === "agency" && !viewerIsAdmin && liveStatus === "in_progress";
 
   const canSubmitForReview =
     canAdminSubmitToAgency || canAgencyForwardToClient || canAgencyDirectSubmit;
@@ -116,7 +148,7 @@ export function ProjectDetailView({
                 {service?.name ?? "Project"}
               </div>
               <div className="text-[0.82rem] text-white/60 mt-1 flex items-center gap-2 flex-wrap">
-                <StatusBadge status={project.status} />
+                <StatusBadge status={liveStatus} />
                 {project.due_date && (
                   <span>
                     Due{" "}
@@ -197,11 +229,11 @@ export function ProjectDetailView({
 
       <DisputePanel
         projectId={project.id}
-        status={project.status}
+        status={liveStatus}
         viewerIsAdmin={viewerIsAdmin}
       />
 
-      {project.status === "revision_requested" && revisionNote?.note && (
+      {liveStatus === "revision_requested" && revisionNote?.note && (
         <RevisionNoteBanner
           note={revisionNote.note}
           requestedAt={revisionNote.requestedAt}
@@ -231,13 +263,26 @@ export function ProjectDetailView({
 
       {/* 2-col: stages + (brief / files) */}
       <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-5 items-start">
-        {/* Stages */}
+        {/* Left col: controls (admin only) + stages */}
+        <div className="flex flex-col gap-4">
+        {controlsSlot}
         <section className="bg-white border border-border rounded-lg p-5 shadow-sm">
           <h2 className="font-display text-[0.95rem] font-extrabold text-dark mb-4">
             Stages
           </h2>
-          <ProjectStages serviceSlug={service?.slug} status={project.status} />
+          <ProjectStages
+            serviceSlug={service?.slug}
+            status={liveStatus}
+            onStageClick={viewerIsAdmin ? handleStageClick : null}
+            saving={stageSaving}
+          />
+          {stageError && (
+            <p className="text-[0.75rem] mt-3 pt-3 border-t border-border" style={{ color: "var(--color-red)" }}>
+              {stageError}
+            </p>
+          )}
         </section>
+        </div>
 
         {/* Brief + Deliverables + Activity */}
         <div className="flex flex-col gap-4">
@@ -262,6 +307,22 @@ export function ProjectDetailView({
             initialFiles={files}
             canUpload={viewer === "agency" || viewerIsAdmin}
           />
+
+          {conversationId && currentUserId && (
+            <div>
+              <h2 className="font-display text-[0.95rem] font-extrabold text-dark mb-2 px-1">Comments</h2>
+              <ChatPanel
+                conversationId={conversationId}
+                initialMessages={initialMessages}
+                currentUserId={currentUserId}
+                placeholder="Leave a comment…"
+                projectStatus={project.status}
+                readOnly={viewerIsAdmin}
+                readOnlyLabel="Admin observer view — use the Chat tab to post."
+                variant="compact"
+              />
+            </div>
+          )}
 
           <section className="bg-white border border-border rounded-lg p-5 shadow-sm">
             <h2 className="font-display text-[0.95rem] font-extrabold text-dark mb-3">

@@ -4,6 +4,7 @@ import { resolvePortalContext } from "@/lib/portal-context";
 import { PortalTopbar } from "@/components/layout/PortalTopbar";
 import { ClientProjectsList } from "@/components/orders/ClientProjectsList";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { ClipboardList } from "lucide-react";
 
 export const metadata = { title: "My Projects · nexxtt.io", robots: "noindex, nofollow" };
 
@@ -52,7 +53,7 @@ export default async function ClientPortalProjectsPage({ params }) {
 
         {jobs.length === 0 ? (
           <EmptyState
-            icon="📋"
+            icon={<ClipboardList className="w-10 h-10" />}
             title="No projects yet"
             description="Your agency will place orders on your behalf. Once projects are underway, you'll see them here."
           />

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, RotateCcw, X, ChevronDown, ChevronUp, Download } from "lucide-react";
+import { Check, RotateCcw, X, ChevronDown, ChevronUp, Download, MessageSquare } from "lucide-react";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 
@@ -722,7 +722,7 @@ export function ClientPortalProjectView({
               </div>
             ) : (
               <div className="bg-white border border-border rounded-[16px] p-5 shadow-sm text-center">
-                <div className="text-2xl mb-2 opacity-30">💬</div>
+                <MessageSquare className="w-8 h-8 mx-auto mb-2 text-muted opacity-30" />
                 <p className="text-sm text-muted">No conversation yet.</p>
               </div>
             )}

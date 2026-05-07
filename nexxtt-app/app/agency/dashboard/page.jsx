@@ -6,6 +6,7 @@ import { DashboardViewSwitcher } from "@/components/dashboard/DashboardViewSwitc
 import { OrdersList } from "@/components/orders/OrdersList";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { resolveAgencyContext } from "@/lib/impersonation";
+import { ClipboardList } from "lucide-react";
 
 export const metadata = {
   title: "Dashboard · nexxtt.io",
@@ -60,7 +61,7 @@ export default async function DashboardPage({ searchParams }) {
           <div className="px-4 sm:px-6 lg:px-8 pb-20 lg:pb-8">
             {jobs.length === 0 ? (
               <EmptyState
-                icon="📋"
+                icon={<ClipboardList className="w-10 h-10" />}
                 title="No orders yet"
                 description="Place your first order and it'll show up here — cost, retail, profit and progress all in one view."
               />

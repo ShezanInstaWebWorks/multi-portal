@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Flag } from "lucide-react";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 
 function deriveOrderBadge(projects) {
@@ -10,9 +10,9 @@ function deriveOrderBadge(projects) {
   const reviewCount = projects.filter((p) => p.status === "in_review").length;
   if (reviewCount > 0) return { label: `${reviewCount} to review`, color: "amber" };
   if (projects.every((p) => ["delivered", "approved"].includes(p.status)))
-    return { label: "Delivered ✓", color: "green" };
+    return { label: "Delivered", color: "green" };
   if (projects.some((p) => p.status === "disputed"))
-    return { label: "⚑ Disputed", color: "red" };
+    return { label: "Disputed", color: "red", icon: Flag };
   if (projects.some((p) => p.status === "in_progress" || p.status === "agency_review"))
     return { label: "In Progress", color: "teal" };
   return { label: "Brief Pending", color: "navy" };
@@ -135,8 +135,9 @@ export function ClientOrderList({ jobs, agencySlug, clientSlug, accentColor }) {
               {/* Status badge */}
               {badge && (
                 <span
-                  className={`inline-flex items-center px-2.5 py-1 rounded-full text-[0.72rem] font-bold border shrink-0 ${BADGE_STYLE[badge.color] ?? BADGE_STYLE.navy}`}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[0.72rem] font-bold border shrink-0 ${BADGE_STYLE[badge.color] ?? BADGE_STYLE.navy}`}
                 >
+                  {badge.icon && <badge.icon className="w-3.5 h-3.5" />}
                   {badge.label}
                 </span>
               )}

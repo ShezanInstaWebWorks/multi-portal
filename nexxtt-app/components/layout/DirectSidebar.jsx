@@ -2,16 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { X } from "lucide-react";
+import { X, Home, MessageSquare, ClipboardList, PlusCircle, Settings } from "lucide-react";
 import { useAgencyStore } from "@/lib/stores/useAgencyStore";
 import { NexxttLogo } from "@/components/auth/NexxttLogo";
 
 const NAV = [
-  { href: "/direct/dashboard",  icon: "🏠", label: "Dashboard" },
-  { href: "/direct/requests",    icon: "💬", label: "Requests & Chat" },
-  { href: "/direct/orders",      icon: "📋", label: "My Orders" },
-  { href: "/direct/orders/new",  icon: "✚",  label: "New Order" },
-  { href: "/direct/account",     icon: "⚙️", label: "Account" },
+  { href: "/direct/dashboard",  icon: Home, label: "Dashboard" },
+  { href: "/direct/requests",    icon: MessageSquare, label: "Requests & Chat" },
+  { href: "/direct/orders",      icon: ClipboardList, label: "My Orders" },
+  { href: "/direct/orders/new",  icon: PlusCircle,  label: "New Order" },
+  { href: "/direct/account",     icon: Settings, label: "Account" },
 ];
 
 export function DirectSidebar() {
@@ -59,6 +59,7 @@ export function DirectSidebar() {
         {NAV.map((item) => {
           const isActive =
             pathname === item.href || pathname.startsWith(item.href + "/");
+          const Icon = item.icon;
           return (
             <Link
               key={item.href}
@@ -90,8 +91,12 @@ export function DirectSidebar() {
                 }
               }}
             >
-              <span className="w-4 h-4 flex items-center justify-center text-[0.9rem] shrink-0">
-                {item.icon}
+              <span className="w-4 h-4 flex items-center justify-center shrink-0">
+                {typeof Icon === "string" ? (
+                  <span className="text-[0.9rem]">{Icon}</span>
+                ) : (
+                  <Icon className="w-4 h-4" />
+                )}
               </span>
               <span className="flex-1">{item.label}</span>
             </Link>

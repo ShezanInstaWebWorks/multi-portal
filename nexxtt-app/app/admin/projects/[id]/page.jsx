@@ -106,14 +106,14 @@ export default async function AdminProjectWorkspace({ params, searchParams }) {
   }
 
   const activeChatId = chatThread === "admin" ? adminConversationId : conversationId;
-  const { data: messages } = activeChatId
-    ? await admin
-        .from("messages")
-        .select("*")
-        .eq("conversation_id", activeChatId)
-        .order("created_at", { ascending: true })
-        .limit(200)
-    : { data: [] };
+  const [{ data: messages }, { data: overviewMessages }] = await Promise.all([
+    activeChatId
+      ? admin.from("messages").select("*").eq("conversation_id", activeChatId).order("created_at", { ascending: true }).limit(200)
+      : Promise.resolve({ data: [] }),
+    conversationId
+      ? admin.from("messages").select("*").eq("conversation_id", conversationId).order("created_at", { ascending: true }).limit(200)
+      : Promise.resolve({ data: [] }),
+  ]);
 
   const job = project.jobs;
   const audience = job?.client_id
@@ -140,10 +140,13 @@ export default async function AdminProjectWorkspace({ params, searchParams }) {
               backLabel="Back to orders"
               revisionNote={revisionNote}
               siblings={siblings}
+              conversationId={conversationId}
+              initialMessages={overviewMessages ?? []}
+              currentUserId={user.id}
               tabsSlot={
                 <div className="mb-3 flex items-center gap-2 flex-wrap">
                   <span
-                    className="inline-flex items-center px-2.5 py-[3px] rounded-full text-[0.7rem] font-bold"
+                    className="inline-flex items-center px-2.5 py-0.75 rounded-full text-[0.7rem] font-bold"
                     style={{
                       background: "rgba(124,58,237,0.1)",
                       color: "var(--color-adm)",
@@ -156,10 +159,8 @@ export default async function AdminProjectWorkspace({ params, searchParams }) {
                   <ProjectTabs />
                 </div>
               }
+              controlsSlot={<AdminProjectControls project={project} />}
             />
-            <section className="px-4 sm:px-6 lg:px-8 max-w-[1100px] mx-auto w-full">
-              <AdminProjectControls project={project} />
-            </section>
           </>
         )}
 

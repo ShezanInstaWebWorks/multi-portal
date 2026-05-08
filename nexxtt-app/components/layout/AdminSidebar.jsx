@@ -8,7 +8,7 @@ import { NexxttLogo } from "@/components/auth/NexxttLogo";
 
 const OVERVIEW = [
   { href: "/admin",         icon: Shield, label: "Admin Dashboard" },
-  { href: "/admin/requests", icon: MessageSquare, label: "Requests & Chat" },
+  { href: "/admin/requests", icon: MessageSquare, label: "Chat" },
   { href: "/admin/orders",   icon: ClipboardList, label: "All Orders" },
 ];
 const PORTALS = [

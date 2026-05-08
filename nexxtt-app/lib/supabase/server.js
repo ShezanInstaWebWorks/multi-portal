@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
 // Next.js 16: `cookies()` is async — callers must `await createServerSupabaseClient()`.
@@ -27,17 +28,10 @@ export async function createServerSupabaseClient() {
   );
 }
 
-// Service-role client. Never expose to the browser. Use only inside Route Handlers
-// that have already validated the caller.
+// Service-role client. Bypasses RLS. Use only server-side.
 export function createAdminSupabaseClient() {
-  return createServerClient(
+  return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY,
-    {
-      cookies: {
-        getAll() { return []; },
-        setAll() {},
-      },
-    }
+    process.env.SUPABASE_SERVICE_ROLE_KEY
   );
 }

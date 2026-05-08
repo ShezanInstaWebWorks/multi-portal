@@ -13,6 +13,9 @@ export async function POST(req, { params }) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
+  const body = await req.json().catch(() => ({}));
+  const note = body.note ?? "";
+
   const { data: profile } = await supabase
     .from("user_profiles")
     .select("role, agency_id")
@@ -105,7 +108,7 @@ export async function POST(req, { params }) {
           user_id: uid,
           type: "client_action",
           title: `🔍 Review ready: ${job?.job_number ?? "a project"}`,
-          body: "Work has been submitted for your review before forwarding to your client.",
+          body: note ? `Work submitted for your review. Note: ${note}` : "Work has been submitted for your review before forwarding to your client.",
           link: `/agency/projects/${id}`,
         }))
       );
@@ -124,7 +127,7 @@ export async function POST(req, { params }) {
           user_id: uid,
           type: "client_action",
           title: `⏰ Please review: ${job?.job_number ?? "a project"}`,
-          body: "Your project is ready — please approve or request changes.",
+          body: note ? `Project ready for review. Note: ${note}` : "Your project is ready — please approve or request changes.",
           link: null,
         }))
       );

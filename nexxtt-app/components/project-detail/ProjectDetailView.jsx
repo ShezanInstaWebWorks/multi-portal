@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChatPanel } from "@/components/chat/ChatPanel";
 import { ArrowLeft } from "lucide-react";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { formatCents } from "@/lib/money";
@@ -69,10 +68,9 @@ export function ProjectDetailView({
     (viewer === "agency_client" || viewer === "direct_client") &&
     liveStatus === "in_review";
 
-  // Agency/admin can mark a brief_pending project as in_progress.
+  // Only admin can start work. Agency sees status and review options only.
   const canStartWork =
-    (viewer === "agency" || viewerIsAdmin) &&
-    liveStatus === "brief_pending";
+    viewerIsAdmin && liveStatus === "brief_pending";
 
   // Admin submits in_progress → agency_review (for agency to review before client).
   const canAdminSubmitToAgency = viewerIsAdmin && liveStatus === "in_progress";
@@ -253,8 +251,8 @@ export function ProjectDetailView({
         />
       )}
 
-      {/* Submit for review — mode determines who the audience is */}
-      {canSubmitForReview && (
+      {/* Submit for review — mode determines who the audience is. Hidden for admin when they can upload deliverables (DeliverablesPanel has its own send button). */}
+      {canSubmitForReview && !viewerIsAdmin && (
         <SubmitForReviewPanel projectId={project.id} hasFiles={files?.length > 0} mode={submitMode} />
       )}
 
@@ -286,43 +284,31 @@ export function ProjectDetailView({
 
         {/* Brief + Deliverables + Activity */}
         <div className="flex flex-col gap-4">
-          <section className="bg-white border border-border rounded-lg p-5 shadow-sm">
-            <h2 className="font-display text-[0.95rem] font-extrabold text-dark mb-3">
-              Brief
-            </h2>
-            {brief?.data ? (
-              <BriefRenderer data={brief.data} />
-            ) : (
-              <p className="text-sm text-muted">No brief on file.</p>
-            )}
-            <div className="text-[0.7rem] text-muted mt-3 pt-3 border-t border-border">
-              {brief?.submitted_at
-                ? `Submitted ${new Date(brief.submitted_at).toLocaleDateString("en-AU", { day: "2-digit", month: "short", year: "numeric" })}`
-                : "—"}
-            </div>
-          </section>
+          {viewer !== "agency" && (
+            <section className="bg-white border border-border rounded-lg p-5 shadow-sm">
+              <h2 className="font-display text-[0.95rem] font-extrabold text-dark mb-3">
+                Brief
+              </h2>
+              {brief?.data ? (
+                <BriefRenderer data={brief.data} />
+              ) : (
+                <p className="text-sm text-muted">No brief on file.</p>
+              )}
+              <div className="text-[0.7rem] text-muted mt-3 pt-3 border-t border-border">
+                {brief?.submitted_at
+                  ? `Submitted ${new Date(brief.submitted_at).toLocaleDateString("en-AU", { day: "2-digit", month: "short", year: "numeric" })}`
+                  : "—"}
+              </div>
+            </section>
+          )}
 
           <DeliverablesPanel
             projectId={project.id}
             initialFiles={files}
-            canUpload={viewer === "agency" || viewerIsAdmin}
+            canUpload={viewerIsAdmin}
+            currentStatus={liveStatus}
+            serviceSlug={service?.slug}
           />
-
-          {conversationId && currentUserId && (
-            <div>
-              <h2 className="font-display text-[0.95rem] font-extrabold text-dark mb-2 px-1">Comments</h2>
-              <ChatPanel
-                conversationId={conversationId}
-                initialMessages={initialMessages}
-                currentUserId={currentUserId}
-                placeholder="Leave a comment…"
-                projectStatus={project.status}
-                readOnly={viewerIsAdmin}
-                readOnlyLabel="Admin observer view — use the Chat tab to post."
-                variant="compact"
-              />
-            </div>
-          )}
 
           <section className="bg-white border border-border rounded-lg p-5 shadow-sm">
             <h2 className="font-display text-[0.95rem] font-extrabold text-dark mb-3">

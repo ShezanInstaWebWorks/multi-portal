@@ -25,7 +25,7 @@ export async function GET(req, { params }) {
   const admin = createAdminSupabaseClient();
   const { data: rows } = await admin
     .from("delivered_files")
-    .select("id, name, storage_path, size_bytes, mime_type, uploaded_at")
+    .select("id, name, storage_path, size_bytes, mime_type, stage, uploaded_at")
     .eq("project_id", id)
     .order("uploaded_at", { ascending: false });
 
@@ -84,6 +84,7 @@ export async function POST(req, { params }) {
 
   const form = await req.formData();
   const file = form.get("file");
+  const stage = form.get("stage");
   if (!(file instanceof File)) {
     return Response.json({ error: "No file uploaded" }, { status: 400 });
   }
@@ -111,26 +112,15 @@ export async function POST(req, { params }) {
       storage_path: storagePath,
       size_bytes: file.size,
       mime_type: file.type || null,
+      stage: stage || null,
     })
-    .select("id, name, storage_path, size_bytes, mime_type, uploaded_at")
+    .select("id, name, storage_path, size_bytes, mime_type, stage, uploaded_at")
     .single();
 
   if (rowErr) {
     // Clean up the uploaded object — no row to point at it.
     await admin.storage.from("delivered-files").remove([storagePath]);
     return Response.json({ error: rowErr.message }, { status: 500 });
-  }
-
-  // First deliverable upload moves the project to "in_review" so the client
-  // sees a Approve / Request revision prompt. We only advance from the
-  // earlier states — once the client has acted (delivered, revision_requested,
-  // disputed) the agency uploading additional files mustn't undo that.
-  const ADVANCE_FROM = new Set(["brief_pending", "in_progress", "revision_requested"]);
-  if (ADVANCE_FROM.has(project.status)) {
-    await admin
-      .from("projects")
-      .update({ status: "in_review", updated_at: new Date().toISOString() })
-      .eq("id", id);
   }
 
   // Notify the client (agency_client via clients.portal_user_id, or direct_client)
